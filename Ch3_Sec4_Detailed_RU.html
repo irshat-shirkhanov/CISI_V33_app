@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 3, Section 4 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 3</div>
+  <div class="app-title">Chapter 3, Section 4 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Money Laundering and Financial Crime · Syllabus 3.4 · CISI V33</div>
+</div>
+<div class="screen">
+
+<div class="intro-card"><div class="intro-title">О чём эта секция?</div><div class="intro-text">Самая большая секция главы 3 — UK <strong>Anti-Money Laundering (AML) режим</strong>. Основное законодательство: <strong>POCA 2002</strong>, <strong>5 правонарушений</strong>: Concealing (s.327), Arrangements (s.328), Acquisition/Use/Possession (s.329), Failure to Disclose (s.330), Tipping Off (s.333A). Процесс ML: <strong>3 стадии</strong>: Placement → Layering → Integration. Фирмы назначают <strong>MLRO / Nominated Officer</strong> для отчётности <strong>SAR в NCA</strong>. 3–4 вопроса на экзамене.</div></div>
+
+<div class="section-card"><div class="section-num">4.1–4.2</div><h2 class="section-title">Определения + POCA 2002 — 5 правонарушений</h2>
+<p class="para"><strong>Money laundering</strong> — превращение денег, полученных от преступной деятельности, в средства, выглядящие законными. <strong>Criminal property</strong> (по POCA): (1) является выгодой от преступной деятельности + (2) лицо знает/подозревает об этом. Оба элемента обязательны.</p>
+<table class="comp-table"><tr><th>Раздел</th><th>Правонарушение</th><th>Макс. наказание</th></tr>
+<tr><td><strong>s.327</strong></td><td>Concealing — сокрытие, маскировка, конвертация, передача или вывоз criminal property</td><td><strong>14 лет + штраф</strong></td></tr>
+<tr><td><strong>s.328</strong></td><td>Arrangements — вступление в или участие в соглашении, облегчающем ML. Широко трактуется — охватывает советников</td><td><strong>14 лет + штраф</strong></td></tr>
+<tr><td><strong>s.329</strong></td><td>Acquisition/Use/Possession — приобретение, использование или владение criminal property. Защита добросовестности</td><td><strong>14 лет + штраф</strong></td></tr>
+<tr><td><strong>s.330</strong></td><td>Failure to Disclose — 3 условия (все): знает/подозревает ИЛИ есть разумные основания (объективный тест) + возникло в регулируемом секторе + не раскрыл MLRO «как можно скорее». Нет минимального порога</td><td><strong>5 лет + штраф</strong></td></tr>
+<tr><td><strong>s.333A</strong></td><td>Tipping Off — раскрытие SAR или расследования, зная/подозревая, что это может повредить расследованию. Только регулируемый сектор</td><td><strong>2 года</strong></td></tr></table>
+<div class="info-box"><div class="ib-title">s.342 — Prejudicing Investigations (шире тipping off)</div>
+Применяется <strong>в целом</strong> (не только регулируемый сектор): разглашение, вероятно повредящее расследованию + фальсификация/уничтожение документов. 5 лет + штраф. Шире, чем tipping off.</div></div>
+
+<div class="section-card"><div class="section-num">4.3</div><h2 class="section-title">3 стадии отмывания денег</h2>
+<table class="comp-table"><tr><th>Стадия</th><th>Описание</th><th>Уязвимость</th></tr>
+<tr><td><strong>1. Placement (внедрение)</strong></td><td>Введение преступных доходов (наличных/активов) в финансовую систему. Типично — размещение наличных в банке/обменнике</td><td>Наиболее уязвима для преступников — наличные появляются в банке</td></tr>
+<tr><td><strong>2. Layering (слоение)</strong></td><td>Перемещение средств через серию сложных транзакций для затруднения отслеживания: покупка/продажа валют, акций, облигаций, CIS, международные переводы</td><td>Сложно обнаружить</td></tr>
+<tr><td><strong>3. Integration (интеграция)</strong></td><td>Финальная стадия: деньги кажутся законными. Покупка недвижимости, предметов роскоши, легального бизнеса</td><td>После интеграции очень сложно восстановить</td></tr></table>
+<p class="para">AML-меры направлены на <strong>placement + layering стадии</strong> — предотвратить достижение интеграции.</p></div>
+
+<div class="section-card"><div class="section-num">4.4</div><h2 class="section-title">CDD + JMLSG + MLR 2017</h2>
+<p class="para"><strong>MLR 2017</strong> реализовал EU Fourth Money Laundering Directive (MLD4). 3 уровня CDD:</p>
+<ul class="bullet"><li><strong>Standard CDD</strong> — базовый: идентификация клиента, верификация, понимание бизнес-отношений</li><li><strong>Simplified Due Diligence (SDD)</strong> — для клиентов с низким риском (котируемые компании, другие регулируемые фирмы)</li><li><strong>Enhanced Due Diligence (EDD)</strong> — высокорисковые ситуации: PEPs, высокорисковые третьи страны, сложные/крупные сделки, не-face-to-face</li></ul>
+<div class="info-box"><div class="ib-title">PEPs — Politically Exposed Persons</div>
+Лицо, которое <strong>является или являлось в течение предшествующего года</strong> наделённым видными публичными функциями (не рядовой/средний чиновник). Обязательства EDD прекращаются через <strong>1 год</strong> после ухода с должности. Семья: супруг/партнёр, дети + их супруги, родители. Обязанности EDD для семьи — прекращаются, когда PEP больше не занимает должность. Требуется: старшее управленческое одобрение + установление источника состояния/средств + усиленный постоянный мониторинг.</div>
+<div class="warn-box"><div class="wb-title">JMLSG — статус</div>
+НЕ одобрен FCA/PRA. Одобрен HM Treasury. НЕ является обязательным. Суды рассматривают соблюдение как доказательство соответствия. FCA источник для AML: <strong>SYSC 6.3</strong>.</div></div>
+
+<div class="section-card"><div class="section-num">4.5</div><h2 class="section-title">MLRO + Nominated Officer + SARs</h2>
+<table class="comp-table"><tr><th>Роль</th><th>MLRO (FCA)</th><th>Nominated Officer (POCA/MLR)</th></tr>
+<tr><td>Первичная</td><td>Надзор за всем AML-соответствием</td><td>Назначенная точка приёма внутренних отчётов</td></tr>
+<tr><td>Правовой долг</td><td>Регуляторные обязанности FCA</td><td>Обязан сообщать подозрения в NCA. Несоблюдение = уголовное преступление</td></tr>
+<tr><td>Внешняя отчётность</td><td>Финальный отчёт в NCA</td><td>Подаёт SAR внешний</td></tr></table>
+<p class="para">На практике в большинстве фирм — <strong>одно и то же лицо</strong>. MLRO отчитывается перед управляющим органом <strong>не реже раза в год</strong>. Цепочка SAR: <strong>Сотрудник → MLRO/Nominated Officer (внутреннее раскрытие) → NCA (внешний SAR)</strong>. Получатель SAR — <strong>NCA</strong>, не FCA, не HMRC. Хранение CDD записей — <strong>5 лет</strong> с окончания деловых отношений.</p>
+<div class="info-box"><div class="ib-title">Criminal Finances Act 2017 (CFA 2017)</div>
+2 новых корпоративных уголовных преступления: (1) неспособность предотвратить содействие <strong>UK tax evasion</strong>; (2) неспособность предотвратить содействие <strong>FOREIGN tax evasion</strong>. Строгая корпоративная ответственность. Защита: наличие <strong>разумных превентивных процедур</strong>. <br><br>
+<strong>SOCPA 2005 — «испанский бой быков»</strong>: защита для действий, законных в стране совершения (с исключениями SoS). Деньги, законно заработанные за рубежом, не являются criminal property по POCA.</div></div>
+
+<div class="summary-card"><div class="summary-title">📋 Итоговое резюме — Ch3 Section 4</div><ul>
+<li><strong>5 правонарушений POCA:</strong> s.327 Concealing (14y) / s.328 Arrangements (14y) / s.329 Acquisition (14y, good faith defence) / s.330 Failure to Disclose (5y, объективный тест, регулируемый сектор, нет порога) / s.333A Tipping Off (2y, регулируемый сектор). s.342 Prejudicing (5y, все лица, шире).</li>
+<li><strong>3 стадии ML:</strong> Placement (внедрение) → Layering (слоение) → Integration (интеграция). AML = placement + layering.</li>
+<li><strong>3 уровня CDD:</strong> Standard / SDD (низкий риск) / EDD (PEPs, высокорисковые страны, сложные операции). PEPs — EDD 1 год после ухода с должности. Source of wealth + funds. Старшее управленческое одобрение.</li>
+<li><strong>JMLSG:</strong> не обязателен, одобрен HMT, не FCA/PRA. SYSC 6.3 — FCA AML sourcebook.</li>
+<li><strong>MLRO / Nominated Officer:</strong> на практике — одно лицо. SAR → NCA. CDD записи — 5 лет.</li>
+<li><strong>CFA 2017:</strong> 2 корпоративных преступления (UK + foreign tax evasion facilitation). Строгая ответственность. Защита = разумные процедуры.</li>
+</ul></div>
+
+</div>
+</body>
+</html>

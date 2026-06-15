@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 11 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 11 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Dealing and Managing · Best Execution · Syllabus 2.15–2.19 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 11 — «рабочий двигатель» повседневных операций инвестиционной фирмы. Регулирует исполнение клиентских поручений: <strong>best execution</strong> (6 факторов), <strong>order handling</strong>, справедливое распределение при агрегировании, <strong>limit orders</strong> и <strong>personal account dealing</strong>. На экзамене 5–7 вопросов.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s112">11.2 Best Execution — 6 факторов</a></li>
+    <li>→ <a href="#s113">11.3 Order Execution Policy (OEP)</a></li>
+    <li>→ <a href="#s114">11.4 Специфические инструкции клиента</a></li>
+    <li>→ <a href="#s115">11.5 Client Order Handling</a></li>
+    <li>→ <a href="#s116">11.6 Aggregation and Allocation</a></li>
+    <li>→ <a href="#s117">11.7 Client Limit Orders</a></li>
+    <li>→ <a href="#s118">11.8 Personal Account Dealing</a></li>
+    <li>→ <a href="#sum11">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s112">
+  <div class="section-num">11.2</div>
+  <h2 class="section-title">Best Execution — «наилучший возможный результат»</h2>
+  <table class="comp-table">
+    <tr><th>Subsection</th><th>Для кого</th></tr>
+    <tr><td>COBS 11.2</td><td>AIFMs и residual CIS operators</td></tr>
+    <tr><td>COBS 11.2A</td><td>MiFID investment firms</td></tr>
+    <tr><td>COBS 11.2B</td><td>UCITS management companies</td></tr>
+  </table>
+  <p class="para">Правила best execution требуют от фирм <strong>исполнять поручения на условиях, наиболее выгодных для клиента</strong>. Стандарт: <strong>all sufficient steps</strong> для MiFID-фирм (более строгий); <strong>all reasonable steps</strong> для AIFMs.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 6 факторов исполнения</div>
+  <ul class="bullet">
+    <li><strong>Price (цена)</strong></li>
+    <li><strong>Costs (затраты)</strong></li>
+    <li><strong>Speed (скорость)</strong></li>
+    <li><strong>Likelihood of execution and settlement (вероятность исполнения и расчётов)</strong></li>
+    <li><strong>Size (объём)</strong></li>
+    <li><strong>Nature (характер)</strong> или любое другое соображение, релевантное для исполнения</li>
+  </ul>
+  <p class="para">Относительная важность каждого фактора зависит от: характеристик клиента (включая категорию) / поручения клиента / финансовых инструментов / торговых площадок.</p>
+  <div class="warn-box">
+    <div class="wb-title">Best execution ≠ лучшая цена</div>
+    Любой из 6 факторов может иметь приоритет над ценой. Для неликвидных инструментов <strong>вероятность исполнения</strong> может быть важнее цены.
+  </div>
+</div>
+
+<div class="section-card" id="s113">
+  <div class="section-num">11.3</div>
+  <h2 class="section-title">Order Execution Policy (OEP)</h2>
+  <p class="para">MiFID II требует наличия у фирм OEP — документа, объясняющего клиентам, как фирма стремится достичь наилучшего результата. Фирмы обязаны: раскрыть OEP клиенту <strong>до</strong> осуществления любого MiFID-бизнеса; получить <strong>предварительное согласие</strong> клиента на OEP; пересматривать OEP <strong>не реже одного раза в год</strong> или при существенных изменениях.</p>
+  <div class="info-box">
+    <div class="ib-title">Portfolio managers и receivers/transmitters</div>
+    ОБЯЗАНЫ поддерживать OEP, но НЕ обязаны получать согласие клиента на политику.
+  </div>
+</div>
+
+<div class="section-card" id="s114">
+  <div class="section-num">11.4</div>
+  <h2 class="section-title">Специфические инструкции клиента</h2>
+  <p class="para">Фирма <strong>считается выполнившей</strong> обязательство по best execution, если <strong>следует конкретным инструкциям клиента</strong> — но только в отношении части поручения, охваченной этими инструкциями. Фирма обязана следовать инструкциям <strong>даже если альтернативное исполнение дало бы лучший результат</strong>. Фирмы <strong>не должны побуждать</strong> клиентов давать конкретные инструкции, если знают, что это помешает достичь наилучшего результата.</p>
+</div>
+
+<div class="section-card" id="s115">
+  <div class="section-num">11.5</div>
+  <h2 class="section-title">Client Order Handling</h2>
+  <p class="para">Фирмы обязаны применять процедуры, обеспечивающие <strong>своевременное, справедливое и эффективное исполнение</strong> клиентских поручений. Сопоставимые поручения исполняются <strong>в порядке их получения</strong>. Фирмы обязаны: точно фиксировать и распределять исполненные поручения; незамедлительно информировать retail-клиентов о <strong>существенных затруднениях</strong> при исполнении; обеспечивать своевременную доставку активов/денег. Фирмы <strong>не должны использовать информацию о клиентских поручениях</strong> ненадлежащим образом.</p>
+</div>
+
+<div class="section-card" id="s116">
+  <div class="section-num">11.6</div>
+  <h2 class="section-title">Aggregation and Allocation — 3 условия</h2>
+  <p class="para">Фирмы вправе агрегировать свои сделки со сделками клиентов (или нескольких клиентов между собой), <strong>только если</strong>:</p>
+  <ul class="bullet">
+    <li>Это <strong>вряд ли причинит ущерб</strong> любому из агрегированных клиентов</li>
+    <li>Клиентам <strong>раскрыто</strong>, что агрегирование может нанести им ущерб</li>
+    <li>Установлена <strong>политика распределения поручений</strong>, достаточно точно описывающая: как объём и цена влияют на распределение; как будут рассматриваться частичные распределения</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Собственные поручения + клиентские</div>
+    При агрегировании поручений фирмы и клиентов и частичном исполнении: <strong>клиентские поручения — в приоритете</strong>. Исключение: если поручение фирмы позволило получить лучшие условия — пропорциональное распределение.
+  </div>
+</div>
+
+<div class="section-card" id="s117">
+  <div class="section-num">11.7</div>
+  <h2 class="section-title">Client Limit Orders</h2>
+  <p class="para">Если фирма получает от retail-клиента <strong>limit order</strong> на акции, котируемые на регулируемом рынке, и не может немедленно исполнить его при текущих рыночных условиях, — она <strong>ОБЯЗАНА НЕМЕДЛЕННО сделать его публичным</strong> (если клиент не дал иных инструкций). Исключение: поручения <strong>выше нормального рыночного объёма</strong>. 2 способа: передача на RM/MTF с книгой заявок ИЛИ обеспечение публичности для возможности исполнения.</p>
+</div>
+
+<div class="section-card" id="s118">
+  <div class="section-num">11.8</div>
+  <h2 class="section-title">Personal Account Dealing</h2>
+  <p class="para">Правила применяются к <strong>relevant persons</strong>: директорам, партнёрам, другим сотрудникам, участвующим в регулируемой деятельности (напрямую или через аутсорсинг). Фирмы обязаны иметь меры, предотвращающие <strong>3 запрещённых действия</strong> relevant persons:</p>
+  <ul class="bullet">
+    <li>Совершение личной сделки, <strong>противоречащей UK MAR / предполагающей неправомерное использование конфиденциальной информации / конфликующей с обязанностями перед клиентом</strong></li>
+    <li>Ненадлежащее <strong>консультирование или побуждение другого лица</strong> к совершению такой сделки</li>
+    <li>Ненадлежащее <strong>раскрытие информации</strong> другому лицу, зная, что оно, вероятно, совершит такую сделку</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Базовое правило COBS 11.7</div>
+    Личные сделки <strong>НЕ ДОЛЖНЫ конфликтовать с интересами клиентов</strong>. Требуется предварительное одобрение (pre-clearance). Ведутся записи всех личных сделок.
+  </div>
+</div>
+
+<div class="summary-card" id="sum11">
+  <div class="summary-title">📋 Итоговое резюме — Section 11</div>
+  <ul>
+    <li><strong>Best execution — 6 факторов:</strong> Price / Costs / Speed / Likelihood of execution &amp; settlement / Size / Nature. Best execution ≠ лучшая цена. MiFID = all sufficient steps; AIFMs = all reasonable steps.</li>
+    <li><strong>OEP:</strong> раскрыть до MiFID-бизнеса + согласие клиента + пересмотр <strong>не реже 1 раза в год</strong> или при существенных изменениях. Portfolio managers / receivers / transmitters: поддерживают OEP, но не получают согласие клиента.</li>
+    <li><strong>Специфические инструкции:</strong> best execution выполнен для части, охваченной инструкцией. Фирма следует инструкции даже при лучших альтернативах. Нельзя побуждать к инструкциям.</li>
+    <li><strong>Order handling:</strong> своевременно + справедливо + эффективно. Сопоставимые поручения — в порядке получения. Немедленно информировать retail о существенных затруднениях. Не злоупотреблять информацией о поручениях.</li>
+    <li><strong>Aggregation — 3 условия:</strong> вряд ли причинит ущерб + раскрыть + политика распределения (объём/цена + частичное). Клиентские поручения имеют приоритет над поручениями фирмы. Исключение: если поручение фирмы улучшило условия → пропорционально.</li>
+    <li><strong>Limit orders:</strong> для акций на регулируемом рынке — сделать публичными НЕМЕДЛЕННО. Исключение: выше нормального объёма. 2 способа: RM/MTF или публично доступным.</li>
+    <li><strong>Personal account dealing — relevant persons:</strong> 3 запрета: противоречие UK MAR / неправомерное консультирование / ненадлежащее раскрытие. Личные сделки не должны конфликтовать с интересами клиентов. Pre-clearance обязателен.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

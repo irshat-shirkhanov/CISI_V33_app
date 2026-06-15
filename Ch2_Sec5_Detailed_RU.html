@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 5 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 5 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Communicating with Clients · Financial Promotions · Syllabus 2.6 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 5 — одна из самых объёмных и экзаменационно нагруженных секций COBS. Охватывает <strong>все коммуникации фирмы с клиентами</strong> — и особенно <strong>финансовые рекламные материалы (financial promotions)</strong>. Центральный стандарт: <strong>fair, clear and not misleading</strong>. Ожидайте 5–7 вопросов с нюансами о cold calls, прошлой доходности, real-time vs non-real-time, исключениях FPO и anti-greenwashing.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s51">5.1 Применение правил коммуникации и financial promotions</a></li>
+    <li>→ <a href="#s512">5.1.2 Fair, Clear and Not Misleading — центральный стандарт</a></li>
+    <li>→ <a href="#s513">5.1.3 Типы промоушнов</a></li>
+    <li>→ <a href="#s514">5.1.4 Anti-Greenwashing — новые правила 2024</a></li>
+    <li>→ <a href="#s52">5.2 Исключения из правил о financial promotions</a></li>
+    <li>→ <a href="#s53">5.3 Реклама проспектов</a></li>
+    <li>→ <a href="#s54">5.4 Одобрение финансовых рекламных материалов + Gateway</a></li>
+    <li>→ <a href="#s542">5.4.2 Использование одобрения другой фирмы</a></li>
+    <li>→ <a href="#s55">5.5 Коммуникации с retail-клиентами</a></li>
+    <li>→ <a href="#s56">5.6 Прошлая, симулированная и будущая доходность</a></li>
+    <li>→ <a href="#s57">5.7 Direct Offer Financial Promotions</a></li>
+    <li>→ <a href="#s58">5.8 Cold Calls и Overseas Persons</a></li>
+    <li>→ <a href="#sum5">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s51">
+  <div class="section-num">5.1</div>
+  <h2 class="section-title">Применение правил коммуникации и financial promotions</h2>
+  <p class="para">Фирма обязана обеспечить, чтобы <strong>все коммуникации, относящиеся к designated investment business</strong>, включая financial promotions, были <strong>fair, clear and not misleading</strong>. Это базовое правило применяется: ко всем категориям клиентов (retail, professional, даже ECP — хотя ряд правил для ECP отключён, базовый стандарт честности остаётся); ко всем типам коммуникаций (устным, письменным, электронным); ко всему designated investment business.</p>
+  <p class="para">Два ключевых Принципа, применимых к коммуникациям: <strong>Principle 6</strong> (Customer interests: фирма должна учитывать интересы клиентов и обращаться с ними справедливо) + <strong>Principle 7</strong> (Communications: fair, clear and not misleading).</p>
+  <div class="info-box">
+    <div class="ib-title">Что такое financial promotion?</div>
+    По FSMA — <strong>любое приглашение или побуждение к инвестиционной деятельности</strong>. Очень широкое определение: реклама в газетах, email-кампании, push-уведомления, видеореклама, посты в соцсетях, флаеры, телемаркетинг, презентации на конференциях, посты инфлюенсеров и т.д.
+  </div>
+</div>
+
+<div class="section-card" id="s512">
+  <div class="section-num">5.1.2</div>
+  <h2 class="section-title">Fair, Clear and Not Misleading — центральный стандарт</h2>
+  <p class="para">Центральный стандарт всей секции. Способ его соблюдения должен быть <strong>соразмерен типу коммуникации и передаваемой информации</strong>.</p>
+  <table class="comp-table">
+    <tr><th>Для кого</th><th>Уровень детализации</th></tr>
+    <tr><td>Professional client</td><td>Может быть более детальным и сложным — технические термины допустимы</td></tr>
+    <tr><td>Retail client</td><td>Менее детальный, но более понятный — с разъяснением ключевых концепций</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Важный нюанс</div>
+    Это НЕ означает, что для professional-клиентов можно «прятать» риски в длинном техническом тексте. Технический язык допустим — но <strong>стандарт fair/clear/not misleading остаётся одинаковым</strong>.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Конкретные правила для financial promotions</div>
+  <ul class="bullet">
+    <li>Если капитал клиента <strong>может быть под риском</strong> — это должно быть чётко указано, нельзя скрывать или смягчать</li>
+    <li>При указании доходности — необходимо дать <strong>сбалансированное представление</strong> о краткосрочных, среднесрочных и долгосрочных перспективах</li>
+    <li>Если продукт сложный или предполагает несколько элементов вознаграждения — коммуницировать честно, чётко и не вводя в заблуждение</li>
+    <li>Если FCA названа регулятором, но коммуникация охватывает и нерегулируемые FCA вопросы — чётко указать, какие аспекты не регулируются FCA</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s513">
+  <div class="section-num">5.1.3</div>
+  <h2 class="section-title">Типы промоушнов</h2>
+  <p class="para">Финансовые промоушны, коммуницируемые или одобряемые фирмой и адресованные клиентам, должны быть <strong>чётко идентифицируемы как таковые</strong>. Исключение: если промоушн адресован professional-клиенту или ECP — маркировка не обязательна.</p>
+  <table class="comp-table">
+    <tr><th>Тип</th><th>Примеры</th><th>Примечание</th></tr>
+    <tr><td><strong>Real-time</strong></td><td>Встречи лицом к лицу, телефонные разговоры, презентации, интерактивный диалог</td><td>Происходит в реальном времени; нет первоначальной записи</td></tr>
+    <tr><td><strong>Unsolicited real-time (cold call)</strong></td><td>Холодные звонки, незапрошенные визиты</td><td>Real-time + клиент не запрашивал</td></tr>
+    <tr><td><strong>Non-real-time</strong></td><td>Email, письма, веб-сайты</td><td>Обычно есть запись; клиент читает в удобное время</td></tr>
+    <tr><td><strong>Direct offer financial promotion</strong></td><td>Промоушн с предложением заключить соглашение + форма/способ ответа</td><td>«Нажмите здесь для покупки» — можно исполнить без дополнительного контакта</td></tr>
+  </table>
+</div>
+
+<div class="section-card" id="s514">
+  <div class="section-num">5.1.4</div>
+  <h2 class="section-title">Anti-Greenwashing — новые правила 2024</h2>
+  <p class="para">Правило anti-greenwashing вступило в силу в <strong>2024 году</strong>. Введено из-за широко распространённой практики маркировки продуктов как «зелёных», «устойчивых» или «ESG-дружественных» без реальных оснований.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> К кому применяется</div>
+  <p class="para">Ко <strong>всем FCA-регулируемым фирмам</strong> при коммуникациях с клиентами (retail и professional) или заявлениях о <strong>характеристиках устойчивости</strong> продукта или услуги. Независимо от того, <strong>где была разработана коммуникация</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 критерия FCA для заявлений об устойчивости</div>
+  <ul class="bullet">
+    <li><strong>Корректны и могут быть подтверждены</strong></li>
+    <li><strong>Чётки и понятны</strong></li>
+    <li><strong>Полны</strong> — не скрывают и не умалчивают важную информацию, учитывают <strong>полный жизненный цикл</strong> продукта/услуги</li>
+    <li><strong>Сопоставимы</strong> — точны в сравнении с другими продуктами/услугами</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Что охватывают «client communications»</div>
+    Заявления, утверждения, стратегии, цели, политики, информация и <strong>изображения</strong>. Даже фотография зелёного леса на главной странице сайта фонда может попасть под это правило, если создаёт впечатление «зелёного» фонда.
+  </div>
+  <div class="example-box">
+    <div class="eb-title">Пример greenwashing</div>
+    Фонд позиционирует себя как «Eco-Friendly Growth Fund» с изображениями ветряных турбин. В реальности 40% портфеля — нефтегазовые компании, из которых лишь 5% инвестируют в «зелёные» технологии. Нарушения критериев: (1) «не подтверждено» и (3) «упущена важная информация».
+  </div>
+  <p class="para">Правило <strong>дополняет</strong> существующие правила Handbook (PRIN, COBS, Consumer Credit) и <strong>не заменяет</strong> их. FCA также прямо связывает anti-greenwashing с <strong>Consumer Duty</strong> — требованием действовать в добросовестности в отношении retail-клиентов.</p>
+</div>
+
+<div class="section-card" id="s52">
+  <div class="section-num">5.2</div>
+  <h2 class="section-title">Исключения из правил о financial promotions</h2>
+  <p class="para">Правила о financial promotions <strong>отключаются</strong> в ряде случаев («excluded communications»):</p>
+  <ul class="bullet">
+    <li>Направлены <strong>high-net-worth individuals</strong> (Article 48 FPO) и <strong>sophisticated investors</strong> (Articles 50 и 50A FPO)</li>
+    <li>Освобождены по <strong>Financial Promotion Order (FPO)</strong> — если коммуницируются неавторизованным лицом или исходят из-за пределов UK без возможности воздействия в UK</li>
+    <li>Из-за пределов UK, освобождённые по FPO</li>
+    <li>Подпадают под (или освобождены от) <strong>Takeover Code</strong></li>
+    <li><strong>One-off promotions</strong>, не являющиеся cold calls</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Ключевое ограничение</div>
+    Исключение для excluded communications <strong>как правило не применяется к UK MiFID business</strong>. Для MiFID-бизнеса основные требования к financial promotions почти всегда сохраняются.
+  </div>
+  <div class="info-box">
+    <div class="ib-title">Обновления HMT 2024</div>
+    В ноябре 2023 года HM Treasury опубликовало ответ на консультацию об исключениях для HNW и sophisticated investors. Изменения, вступившие в силу в 2024 году: бизнес обязан предоставлять сведения о себе в коммуникациях по исключениям; обновление названия исключения для certified HNW (слово «certified» удалено); обновление investor statements. <strong>ВАЖНО: старые investor statements — НЕДЕЙСТВИТЕЛЬНЫ</strong>. Инвесторы должны подписать новые по обновлённым критериям.
+  </div>
+</div>
+
+<div class="section-card" id="s53">
+  <div class="section-num">5.3</div>
+  <h2 class="section-title">Реклама проспектов</h2>
+  <p class="para">COBS 4 <strong>не применяется</strong>, если применяются <strong>Prospectus Regulation Rules (PRR 3.3)</strong> — отдельный режим для публичного предложения ценных бумаг.</p>
+  <p class="para">PRR 3.3 применяется к предложениям или допуску к торгам transferable securities, для которых требуется проспект (Section 85 FSMA) или было принято решение составить проспект (Section 87 FSMA).</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 требования к рекламе проспекта</div>
+  <ul class="bullet">
+    <li>Указывает, что проспект опубликован (или будет опубликован) и <strong>где его можно получить</strong></li>
+    <li>Чётко <strong>идентифицируется как реклама</strong></li>
+    <li>Информация <strong>не является недостоверной или вводящей в заблуждение</strong></li>
+    <li><strong>Соответствует</strong> информации, содержащейся (или обязанной содержаться) в проспекте</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Обязательное заявление в письменной рекламе</div>
+    Любая письменная реклама проспекта обязана <strong>видным жирным шрифтом</strong> указывать, что это <strong>НЕ проспект, а реклама</strong>, и что инвесторы <strong>не должны принимать решения</strong> об инвестировании иначе как на основании полного проспекта.
+  </div>
+</div>
+
+<div class="section-card" id="s54">
+  <div class="section-num">5.4</div>
+  <h2 class="section-title">Одобрение финансовых рекламных материалов + Gateway</h2>
+  <p class="para">По FSMA неавторизованное лицо не может самостоятельно коммуницировать financial promotion. Если авторизованная фирма <strong>одобряет</strong> такой промоушн («gateway»), неавторизованное лицо может его распространять. До одобрения фирма должна подтвердить <strong>соответствие правилам о financial promotions</strong>. Если впоследствии выясняется несоответствие — фирма должна <strong>отозвать одобрение</strong> и <strong>уведомить всех, кто полагается на него</strong>, как можно скорее.</p>
+  <div class="info-box">
+    <div class="ib-title">Правила одобрения = как для собственных промоушнов</div>
+    Одобряющая фирма несёт ту же ответственность за содержание, как если бы коммуницировала промоушн сама.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Ограничения</div>
+  <ul class="bullet">
+    <li>Фирмы <strong>НЕ могут одобрять real-time financial promotions</strong> — только non-real-time</li>
+    <li>Ограниченные одобрения должны быть <strong>явно указаны</strong>; коммуникация промоушна за пределами указанных ограничений = правонарушение неавторизованного лица</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Gateway 2023 — фундаментальное изменение</div>
+    До 2023 года: <em>любая</em> авторизованная фирма могла одобрять финансовые промоушны для неавторизованных лиц.<br>
+    С 2023 года: FCA ввела «gateway» — фирмы, желающие одобрять промоушны для третьих сторон, <strong>должны получить специальное разрешение FCA</strong>. Без этого разрешения — только одобрение <em>собственных</em> промоушнов.
+  </div>
+  <div class="info-box">
+    <div class="ib-title">Инфлюенсеры и соцсети</div>
+    FCA чётко указала: инфлюенсеры, продвигающие финансовые продукты в соцсетях без одобрения авторизованной FCA-фирмой (с нужным разрешением), могут совершать <strong>уголовное преступление</strong>. Фирмы несут ответственность за все промоушны, включая промоушны инфлюенсеров, с которыми они сотрудничают.
+  </div>
+</div>
+
+<div class="section-card" id="s542">
+  <div class="section-num">5.4.2</div>
+  <h2 class="section-title">Использование одобрения другой фирмы</h2>
+  <p class="para">Для <strong>non-MiFID-бизнеса</strong> фирма не нарушает правила, если коммуницирует финансовый промоушн, произведённый другой стороной, при соблюдении <strong>трёх условий</strong>:</p>
+  <ul class="bullet">
+    <li>Принимает <strong>разумные меры</strong> для установления того, что другая авторизованная фирма подтвердила соответствие правилам</li>
+    <li>Принимает <strong>разумные меры</strong> для коммуникации только предполагаемому типу получателей</li>
+    <li>Насколько ей (должно быть) известно — промоушн по-прежнему <strong>fair, clear and not misleading</strong> и не был отозван</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s55">
+  <div class="section-num">5.5</div>
+  <h2 class="section-title">Коммуникации с retail-клиентами — дополнительные правила</h2>
+  <p class="para">При предоставлении информации о designated investment business или одобрении/выпуске financial promotion, которую вероятно получит retail-клиент, применяются дополнительные правила COBS. Они охватывают: ясность формулировок и структуры / обязательные предупреждения о рисках / баланс позитивных и негативных аспектов / правила сравнений и цифр.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Ограничения для Speculative Illiquid Securities (SIS)</div>
+  <p class="para">Спекулятивные неликвидные ценные бумаги — высокорисковые, низколиквидные (часто mini-bonds). После скандалов (London Capital &amp; Finance и др.) FCA существенно ограничила их продвижение retail-клиентам: запрет на массовый маркетинг; промоушн разрешён только для certified sophisticated, HNW, restricted investors; обязательные предупреждения о рисках.</p>
+  <div class="info-box">
+    <div class="ib-title">Обязательное предупреждение о риске</div>
+    Финансовый промоушн высокорискованной инвестиции для retail-клиента обязан содержать обязательное предупреждение, включая фразу: «<strong>investors could lose all of the money they invest</strong>».
+  </div>
+</div>
+
+<div class="section-card" id="s56">
+  <div class="section-num">5.6</div>
+  <h2 class="section-title">Прошлая, симулированная и будущая доходность</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> Past Performance (прошлая доходность)</div>
+  <p class="para">При представлении фактической прошлой доходности: <strong>видное предупреждение</strong> о том, что прошлая доходность не является надёжным индикатором будущей / информация о релевантном периоде и источнике / если данные gross (без вычета расходов) — <strong>раскрыть влияние комиссий, сборов, налогов</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Simulated Past Performance (симулированная прошлая доходность)</div>
+  <p class="para">Для нового продукта без реального трека — можно показывать симулированную доходность, но: симуляция должна основываться на <strong>фактической прошлой доходности одной или нескольких инвестиций/индексов</strong>, которые совпадают или лежат в основе симулируемых инвестиций; <strong>видное предупреждение</strong>: (a) цифры — симулированная прошлая доходность И (b) прошлая доходность — не надёжный индикатор будущей.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Future Performance (прогнозы будущей доходности)</div>
+  <p class="para">Прогнозы должны основываться на <strong>разумных предположениях</strong>, подкреплённых <strong>объективными данными</strong>. Прогнозы <strong>НЕ ДОЛЖНЫ</strong> основываться на или ссылаться на <strong>симулированную прошлую доходность</strong>.</p>
+  <div class="warn-box">
+    <div class="wb-title">Почему симулированное прошлое нельзя использовать для прогнозов будущего</div>
+    Симулированное прошлое — «что было бы». Прогноз будущего — «что будет». Смешение создаёт иллюзию того, что смоделированное прошлое = ожидаемая будущая доходность. Это очевидная манипуляция и поэтому прямо запрещена.
+  </div>
+</div>
+
+<div class="section-card" id="s57">
+  <div class="section-num">5.7</div>
+  <h2 class="section-title">Direct Offer Financial Promotions</h2>
+  <p class="para"><strong>Direct offer financial promotion</strong> — промоушн, содержащий <strong>предложение о заключении соглашения</strong> И <strong>форму ответа или указанный способ ответа</strong>. Клиент может принять предложение <em>напрямую</em>, без отдельного взаимодействия с фирмой.</p>
+  <p class="para">Директ-оффер промоушн, который вероятно получит retail-клиент, должен включать предписанную информацию по 8 категориям: фирма и услуги / управление инвестициями / хранение активов / затраты и сборы / характер и риски инвестиций / заявление о проспекте (если применимо) / объяснение совокупного инвестиционного риска / детали гарантий третьих сторон.</p>
+  <div class="info-box">
+    <div class="ib-title">Исключение: ссылка на другой документ</div>
+    Обязательные элементы информации могут <strong>не включаться</strong> в сам промоушн, если клиент может обратиться к <strong>другому документу</strong> (например, проспекту), содержащему эту информацию, для ответа на предложение.
+  </div>
+</div>
+
+<div class="section-card" id="s58">
+  <div class="section-num">5.8</div>
+  <h2 class="section-title">Cold Calls и Overseas Persons</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> 5.8.2 Cold Calls (незапрошенные коммуникации в реальном времени)</div>
+  <p class="para">Фирмы <strong>не должны совершать cold calls</strong>, кроме трёх случаев:</p>
+  <ul class="bullet">
+    <li><strong>Существующий клиент, ожидающий звонка</strong>: у получателя есть существующие отношения с фирмой и он <em>ожидал бы или предвидел</em> получение такого звонка</li>
+    <li><strong>Generally marketable packaged product</strong>: звонок касается generally marketable packaged product, <strong>НЕ являющегося</strong> high-volatility fund или полисом страхования жизни, привязанным к такому фонду</li>
+    <li><strong>Controlled activity с ограниченным набором инвестиций</strong>: включая депозиты и readily realisable investments, кроме варрантов</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">High-volatility funds — вне исключения для cold calls</div>
+    Даже для существующего клиента фирма <strong>НЕ МОЖЕТ</strong> звонить ему о <strong>high-volatility fund</strong> или <strong>полисе страхования жизни, привязанном к такому фонду</strong>. Варранты также вне исключения.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Незаписанные промоушны — 4 условия</div>
+  <p class="para">Если фирма инициирует <strong>незаписанный промоушн</strong> (устный, лицом к лицу) конкретному лицу <strong>вне своих помещений</strong> — должны быть выполнены 4 условия:</p>
+  <ul class="bullet">
+    <li><strong>Подходящее время суток</strong></li>
+    <li><strong>Идентифицировать себя и фирму, указать цель</strong> звонка/визита</li>
+    <li><strong>Выяснить, хочет ли клиент продолжать или завершить</strong> (и завершить по запросу)</li>
+    <li><strong>Предоставить контактные данные</strong>, если договорена встреча</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> 5.8.3 Overseas Persons</div>
+  <p class="para">Фирмы <strong>НЕ ВПРАВЕ</strong> коммуницировать или одобрять financial promotions для зарубежных фирм, если промоушн не содержит: указания, какая фирма его одобрила/коммуницировала; (если применимо) указания, что <strong>правила защиты инвесторов не применяются</strong>, и в какой мере доступна UK компенсационная схема.</p>
+  <div class="info-box">
+    <div class="ib-title">Фундаментальное требование</div>
+    Фирма <strong>не должна коммуницировать/одобрять</strong> промоушн, если у неё нет <strong>сомнений в том, что зарубежная фирма будет обращаться с UK retail-клиентами честно и надёжно</strong>. Формального одобрения недостаточно — требуется реальный due diligence по зарубежному партнёру.
+  </div>
+</div>
+
+<div class="summary-card" id="sum5">
+  <div class="summary-title">📋 Итоговое резюме — Section 5</div>
+  <ul>
+    <li><strong>Центральный стандарт: FAIR, CLEAR AND NOT MISLEADING.</strong> Применяется ко всем коммуникациям, всем клиентам. Построен на Принципах 6 и 7. Представление соразмерно типу клиента: retail — проще, professional — сложнее допустимо.</li>
+    <li><strong>5.1.2:</strong> Капитал под риском = явно указать. Доходность = сбалансированное представление. FCA + нерегулируемые аспекты = чётко разделить.</li>
+    <li><strong>5.1.3 Типы:</strong> Промоушн должен быть чётко идентифицирован как таковой (исключение: professional/ECP). Типы: real-time / unsolicited real-time (cold call) / non-real-time / direct offer.</li>
+    <li><strong>5.1.4 Anti-greenwashing (2024):</strong> 4 критерия — корректны/подтверждены + чётки + полны + сопоставимы. Все FCA-фирмы. Связано с Consumer Duty (добросовестность к retail).</li>
+    <li><strong>5.2 Excluded communications:</strong> HNW (Art.48 FPO), sophisticated (Art.50/50A FPO), FPO-exempt, Takeover Code, one-off (не cold call). <strong>НЕ применяется к UK MiFID business.</strong> 2024: старые investor statements недействительны.</li>
+    <li><strong>5.3 Реклама проспекта:</strong> вместо COBS 4 применяется PRR 3.3. 4 требования: проспект опубликован + чётко реклама + точная + соответствует проспекту. Письменно — <strong>жирным: «не является проспектом»</strong>.</li>
+    <li><strong>5.4 Одобрение:</strong> одобряющая фирма = ответственна как автор. При несоответствии — отозвать + уведомить полагающихся сторон ASAP. <strong>Real-time НЕ МОЖЕТ быть одобрен</strong>. Ограниченное одобрение = явно указывать; нарушение ограничений = правонарушение. <strong>Gateway 2023:</strong> нужно специальное разрешение FCA для одобрения третьих сторон.</li>
+    <li><strong>5.4.2 Использование чужого одобрения (non-MiFID):</strong> 3 условия — разумные меры по подтверждению другой авторизованной фирмы + правильный тип получателей + по-прежнему fair/clear/not misleading.</li>
+    <li><strong>5.5 Retail:</strong> дополнительные правила + ограничения SIS + предупреждение «<strong>investors could lose all of the money they invest</strong>» для высокорисковых.</li>
+    <li><strong>5.6 Доходность:</strong> Прошлая — видное предупреждение «не надёжный индикатор»; gross → раскрыть расходы. Симулированная — на основе фактической прошлой + видное предупреждение «симулированная + не надёжный индикатор». Будущая — разумные предположения + объективные данные; <strong>НЕ МОЖЕТ основываться на симулированном прошлом</strong>.</li>
+    <li><strong>5.7 Direct offer:</strong> 8 категорий предписанной информации (фирма/услуги + управление + хранение + затраты + характер/риски + проспект + совокупный риск + гарантия). Можно ссылаться на другой документ при наличии доступа у клиента.</li>
+    <li><strong>5.8 Cold calls:</strong> запрещены, кроме 3 случаев — существующий клиент ожидает / packaged product (НЕ high-volatility/life-policy-linked) / limited investments (НЕ warrants). Незаписанные промоушны: 4 условия — время + идентификация + готовность продолжить + контактные данные. <strong>Overseas:</strong> нельзя промотировать без — кто одобрил + потеря UK-защиты + статус UK-компенсации + due diligence о надёжности зарубежной фирмы. Инфлюенсеры без одобрения = потенциальное уголовное преступление.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 1, Section 4 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 1</div>
+  <div class="app-title">Chapter 1, Section 4 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Prudential Standards · Syllabus 1.4 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">
+    Section 4 — о <strong>финансовой устойчивости фирм</strong>. Если conduct-правила (COBS, Принципы) — это «как фирмы ведут себя», то prudential-правила — это «сколько капитала и ликвидности фирма обязана держать для выполнения своих обязательств». Логика после 2008 года: <strong>фирма без достаточного буфера рухнет и утянет за собой клиентов</strong>. Prudential разделён на три sourcebook'а: <strong>GENPRU</strong> (банки), <strong>MIFIDPRU</strong> (MiFID investment firms), <strong>IPRU-INV</strong> (все остальные). Ключевое новшество — <strong>IFPR</strong>, действующий с января 2022: сдвиг от «рисков ДЛЯ фирмы» → «вреда, который фирма МОЖЕТ ПРИЧИНИТЬ». На экзамене 1–2 вопроса.
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s41">4.1 Capital Adequacy — основа</a></li>
+    <li>→ <a href="#three-sb">Три sourcebook'а: GENPRU / MIFIDPRU / IPRU-INV</a></li>
+    <li>→ <a href="#crd">CRD + CRR — для банков</a></li>
+    <li>→ <a href="#pillars">3 Pillars системы CRD</a></li>
+    <li>→ <a href="#tiers">Тиры капитала</a></li>
+    <li>→ <a href="#ifpr">IFPR — философский сдвиг</a></li>
+    <li>→ <a href="#two-req">2 ключевых требования</a></li>
+    <li>→ <a href="#four-out">4 исхода FCA по IFPR</a></li>
+    <li>→ <a href="#sum4">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s41">
+  <div class="section-num">4.1</div>
+  <h2 class="section-title">Capital Adequacy — основа пруденциального регулирования</h2>
+  <p class="para"><strong>Principle 4</strong> Principles for Businesses гласит:</p>
+  <div class="info-box">
+    <div class="ib-title">Principle 4 — Financial Prudence</div>
+    «A firm must maintain adequate financial resources» — фирма обязана поддерживать достаточные финансовые ресурсы.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Финансовые ресурсы — что это</div>
+  <p class="para">Финансовые ресурсы включают <strong>и то, и другое</strong>:</p>
+  <ul class="bullet">
+    <li><strong>Capital resources</strong> — постоянная база финансирования фирмы (акции, резервы, субординированный долг)</li>
+    <li><strong>Liquidity resources</strong> — способность фирмы выполнять <strong>краткосрочные обязательства по мере наступления срока</strong> (денежные средства, легко реализуемые активы)</li>
+  </ul>
+  <p class="para">Цель: фирма способна <strong>выполнять свои обязательства по мере их наступления</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Почему стандарты различаются</div>
+  <p class="para">Стандарты различаются в зависимости от <strong>вида деятельности</strong> фирмы и того, <strong>подпадает ли деятельность под MiFID</strong>.</p>
+  <div class="example-box">
+    <div class="eb-title">Почему не одно правило для всех</div>
+    Банк принимает розничные депозиты — его банкротство немедленно наносит массовый ущерб. IFA даёт советы — его банкротство не уничтожит отрасль. Применение одинаковых требований к капиталу было бы избыточным для советников и недостаточным для банков. Поэтому существуют 3 разных sourcebook'а.
+  </div>
+</div>
+
+<div class="section-card" id="three-sb">
+  <div class="section-num">4.1.1</div>
+  <h2 class="section-title">Три Sourcebook'а — кто под каким</h2>
+  <table class="comp-table">
+    <tr><th>Sourcebook</th><th>Кто</th><th>Регулятор</th></tr>
+    <tr><td><strong>GENPRU</strong></td><td>Фирмы под UK CRD — банки / кредитные институты / deposit-taking institutions</td><td>PRA</td></tr>
+    <tr><td><strong>MIFIDPRU</strong></td><td>UK MiFID investment firms — <strong>не банки</strong>. В силе с <strong>1 января 2022</strong></td><td>FCA</td></tr>
+    <tr><td><strong>IPRU-INV</strong></td><td>Инвестиционные фирмы, <strong>не подпадающие</strong> под CRD/CRR или MIFIDPRU</td><td>FCA</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Логика выбора sourcebook'а</div>
+    Банк → <strong>GENPRU</strong> (PRA). MiFID investment firm (не банк) → <strong>MIFIDPRU</strong> (FCA, с 2022). Всё остальное → <strong>IPRU-INV</strong> (FCA). IPRU-INV — «корзина для остальных».
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> IPRU-INV — для каких фирм</div>
+  <ul class="bullet">
+    <li>Авторизованные профессиональные фирмы</li>
+    <li>Отдельные виды securities and futures firms, не подпадающие напрямую под MiFID</li>
+    <li>Lloyd's underwriting agents и members' advisers</li>
+    <li>Fund managers — включая SIPP operators</li>
+    <li>Exempt CAD firms, service companies</li>
+    <li>Personal investment firms (MiFID-exempt, например <strong>IFA</strong>)</li>
+    <li>Credit unions с Junior ISAs</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">IPRU-INV зависит от деятельности</div>
+    Если <strong>деятельность фирмы меняется</strong> — это может означать, что фирма обязана соблюдать <strong>иные аспекты IPRU-INV</strong>. Правила не унифицированы для каждого типа фирм.
+  </div>
+</div>
+
+<div class="section-card" id="crd">
+  <div class="section-num">4.1.2</div>
+  <h2 class="section-title">CRD + CRR — система для банков</h2>
+  <p class="para"><strong>Capital Requirements Directive (CRD)</strong> и <strong>Capital Requirements Regulations (CRR)</strong> применяются к <strong>кредитным институтам</strong>, под надзором <strong>PRA</strong>. Текст был <strong>сохранён после Brexit</strong>. CRD и CRR создали <strong>общую систему финансовых ресурсов и управления рисками</strong> — минимизируя риск краха фирмы.</p>
+  <div class="info-box">
+    <div class="ib-title">Происхождение — Basel III</div>
+    CRD/CRR реализуют стандарты <strong>Basel III</strong> (Basel Committee on Banking Supervision). После кризиса 2008 года ужесточены. Великобритания сохранила их после Brexit, теперь вправе отступать от трактовки ЕС.
+  </div>
+</div>
+
+<div class="section-card" id="pillars">
+  <div class="section-num">4.1.3</div>
+  <h2 class="section-title">3 Pillars системы CRD</h2>
+  <table class="comp-table">
+    <tr><th>Pillar</th><th>Что это</th></tr>
+    <tr><td><strong>Pillar 1</strong></td><td>Минимальные требования к капиталу для <strong>кредитного, рыночного и операционного рисков</strong>. Количественный — конкретный минимум, обязательный для фирмы.</td></tr>
+    <tr><td><strong>Pillar 2</strong></td><td>Фирмы и надзорные органы <strong>определяют, нужен ли дополнительный капитал</strong> для рисков, не охваченных Pillar 1. Качественный.</td></tr>
+    <tr><td><strong>Pillar 3</strong></td><td><strong>Раскрытие информации</strong> о рисках, капитале и управлении рисками — для <strong>рыночной дисциплины</strong>.</td></tr>
+  </table>
+  <div class="warn-box">
+    <div class="wb-title">Немедленное уведомление при нарушении</div>
+    Если капитальные ресурсы упали ниже минимума — <strong>НЕМЕДЛЕННО уведомить PRA</strong>. Никакого льготного периода.
+  </div>
+</div>
+
+<div class="section-card" id="tiers">
+  <div class="section-num">4.1.4</div>
+  <h2 class="section-title">Тиры капитала — качество имеет значение</h2>
+  <p class="para">Фирмы обязаны оценивать <strong>способность инструментов поглощать убытки (loss absorbency)</strong>. Капитал делится на <strong>три тира</strong>:</p>
+  <table class="comp-table">
+    <tr><th>Тир</th><th>Примеры</th><th>Loss absorbency</th></tr>
+    <tr><td><strong>Core Tier 1</strong></td><td>Постоянный акционерный капитал, резервы, верифицированная промежуточная прибыль</td><td><strong>Наивысшая</strong></td></tr>
+    <tr><td><strong>Tier 2</strong></td><td>Долгосрочный субординированный долг, резервы переоценки</td><td>Средняя</td></tr>
+    <tr><td><strong>Tier 3</strong></td><td>Краткосрочный субординированный долг, промежуточная P&amp;L торговой книги</td><td>Наименьшая</td></tr>
+  </table>
+  <div class="exam-box">
+    <div class="xb-title">Пример для экзамена</div>
+    Постоянный акционерный капитал → <strong>Core T1</strong>. Долгосрочный суб. долг (10 лет) → <strong>T2</strong>. Краткосрочный суб. долг (2 года) → <strong>T3</strong>. <em>Срок имеет значение — одинаковый тип, разный срок = разный тир.</em>
+  </div>
+  <div class="info-box">
+    <div class="ib-title">Goodwill — вычитается, не засчитывается</div>
+    Goodwill и нематериальные активы <strong>вычитаются ИЗ капитала</strong>, а не засчитываются в него. Они не поглощают убытки в стрессовой ситуации.
+  </div>
+</div>
+
+<div class="section-card" id="ifpr">
+  <div class="section-num">4.2</div>
+  <h2 class="section-title">IFPR — Investment Firms Prudential Regime</h2>
+  <p class="para"><strong>IFPR</strong> — новый режим для FCA solo-regulated MiFID investment firms в <strong>MIFIDPRU Sourcebook</strong>.</p>
+  <table class="comp-table">
+    <tr><th>Дата</th><th>Событие</th></tr>
+    <tr><td>2021</td><td>В ЕС вступили в силу <strong>IFD</strong> и <strong>IFR</strong></td></tr>
+    <tr><td>1 января 2022</td><td>UK IFPR вступил в силу в <strong>MIFIDPRU</strong> с UK-специфическими корректировками</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Ключевой сдвиг парадигмы</div>
+    <strong>Старый подход (CRD):</strong> «риски, с которыми сталкиваются фирмы».<br>
+    <strong>IFPR (новый):</strong> «вред, который фирмы могут причинить» потребителям и рынкам.<br>
+    Это радикальный сдвиг. Требования масштабируются исходя из <strong>потенциального вреда от деятельности</strong>.
+  </div>
+  <p class="para">Цель IFPR — <strong>упростить требования</strong>, перенаправив фокус <strong>от рисков для фирмы</strong> — к <strong>снижению вреда, который фирма может причинить потребителям и рынкам</strong>.</p>
+  <div class="info-box">
+    <div class="ib-title">Orderly wind down — концепция</div>
+    IFPR — не про абсолютное предотвращение краха. Речь о том, чтобы при крахе фирма могла <strong>свернуть деятельность упорядоченно</strong>: вернуть активы клиентов, закрыть позиции, выплатить зарплаты — без нарушения интересов потребителей и рынков.
+  </div>
+</div>
+
+<div class="section-card" id="two-req">
+  <div class="section-num">4.2.1</div>
+  <h2 class="section-title">2 ключевых требования</h2>
+  <div class="info-box">
+    <div class="ib-title">Требование 1</div>
+    Фирмы обязаны <strong>В ЛЮБОЙ МОМЕНТ (at all times)</strong> располагать объёмом и типом финансовых ресурсов, требуемым правилами регулятора.
+  </div>
+  <div class="info-box">
+    <div class="ib-title">Требование 2</div>
+    Фирмы обязаны <strong>НЕМЕДЛЕННО (immediately)</strong> уведомить регулятора, если фирма узнаёт о нарушении или <strong>предвидит нарушение</strong> правила о финансовых ресурсах.
+  </div>
+  <div class="exam-box">
+    <div class="xb-title">Ключевые слова для экзамена</div>
+    «At all times» — <strong>постоянно</strong>, не ежеквартально. «Immediately» — <strong>сразу</strong>, не через 5 дней. «Expects to be in breach» — уведомление требуется <em>до</em> фактического нарушения, если оно предвидится.
+  </div>
+</div>
+
+<div class="section-card" id="four-out">
+  <div class="section-num">4.2.2</div>
+  <h2 class="section-title">4 исхода FCA по IFPR</h2>
+  <ul class="bullet">
+    <li><strong>Пруденциальный режим, соответствующий бизнес-моделям инвестиционных фирм</strong> — учитывает различные модели; обеспечивает защиту потребителей и рынков от вреда</li>
+    <li><strong>FCA investment firms подпадают под значимые и последовательные пруденциальные требования</strong></li>
+    <li><strong>Меньше времени на сложные расчёты</strong> требований к капиталу, которые мало помогают управлять риском</li>
+    <li><strong>Правила понятны и доступны</strong> — большинство правил в едином sourcebook <strong>MIFIDPRU</strong></li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">До IFPR — фрагментация</div>
+    Пруденциальные правила были разбросаны по GENPRU, BIPRU, IPRU-INV, SYSC. IFPR консолидировал их в одном месте (MIFIDPRU) — это исход 4.
+  </div>
+</div>
+
+<div class="summary-card" id="sum4">
+  <div class="summary-title">📋 Итоговое резюме — Section 4</div>
+  <ul>
+    <li><strong>Дерево решений:</strong> Банк → GENPRU (PRA). MiFID firm (не банк) → MIFIDPRU (FCA, с янв. 2022). Всё остальное → IPRU-INV (FCA).</li>
+    <li><strong>Capital Adequacy:</strong> Principle 4. Финансовые ресурсы = capital + liquidity. Стандарты зависят от вида деятельности и MiFID.</li>
+    <li><strong>CRD/CRR:</strong> для банков, PRA, сохранено после Brexit. 3 Pillars: минимальные требования / доп. капитал / раскрытие. Немедленное уведомление PRA при падении ниже минимума.</li>
+    <li><strong>Тиры:</strong> Core T1 (наивысший) — постоянный акционерный капитал. T2 (средний) — долгосрочный суб. долг. T3 (наименьший) — краткосрочный суб. долг. Goodwill — вычитается.</li>
+    <li><strong>IFPR:</strong> EU IFD/IFR (2021) → UK IFPR (1 янв. 2022). Сдвиг: «риски для фирмы» → «вред, который фирма может причинить». Orderly wind down.</li>
+    <li><strong>2 требования:</strong> at all times + немедленное уведомление (включая ожидаемое нарушение).</li>
+    <li><strong>4 исхода IFPR:</strong> соответствие бизнес-моделям / значимые требования / меньше расчётов / единый MIFIDPRU.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

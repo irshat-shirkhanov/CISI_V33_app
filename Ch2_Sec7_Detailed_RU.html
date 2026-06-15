@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 7 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 7 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Advising and Selling Standards · Suitability · Appropriateness · Syllabus 2.10–2.11 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 7 — самая техническая и экзаменационно нагруженная часть главы 2. Охватывает два принципиально разных режима: советы клиенту (<strong>advised → suitability</strong>) и продажи без советов (<strong>non-advised → appropriateness</strong>). Плюс: churning, suitability reports, insistent clients и execution-only. Ожидайте 5–8 вопросов с массой деталей о порогах, сроках и исключениях.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#phil">Advised vs Non-Advised — философия</a></li>
+    <li>→ <a href="#s71">7.1 Применение правил suitability</a></li>
+    <li>→ <a href="#s72">7.2 Информация для suitability — 3 области</a></li>
+    <li>→ <a href="#s73">7.3 Professional clients — особый режим</a></li>
+    <li>→ <a href="#s74">7.4 Churning and Switching</a></li>
+    <li>→ <a href="#s75">7.5 The Suitability Report</a></li>
+    <li>→ <a href="#s76">7.6 Insistent Clients</a></li>
+    <li>→ <a href="#s77">7.7 Appropriateness (Non-Advised Sales)</a></li>
+    <li>→ <a href="#s78">7.8 Execution-Only и non-complex instruments</a></li>
+    <li>→ <a href="#sum7">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="phil">
+  <div class="section-num">Введение</div>
+  <h2 class="section-title">Advised vs Non-Advised — три режима</h2>
+  <table class="comp-table">
+    <tr><th>Режим</th><th>Когда</th><th>Что нужно</th><th>Ответственность</th></tr>
+    <tr><td><strong>Suitability</strong></td><td>Фирма даёт личную рекомендацию или управляет портфелем</td><td>3 области информации</td><td>Фирма несёт полную ответственность</td></tr>
+    <tr><td><strong>Appropriateness</strong></td><td>Фирма НЕ даёт рекомендацию; клиент решает сам (в сложных инструментах)</td><td>1 область: знания и опыт</td><td>Клиент несёт ответственность за решение</td></tr>
+    <tr><td><strong>Execution-Only</strong></td><td>Только исполнение поручений, без оценок</td><td>Ничего — только non-complex + 3 условия</td><td>Никакой оценки фирмой</td></tr>
+  </table>
+</div>
+
+<div class="section-card" id="s71">
+  <div class="section-num">7.1</div>
+  <h2 class="section-title">Применение правил suitability</h2>
+  <p class="para">Правила suitability COBS применяются в трёх случаях:</p>
+  <ul class="bullet">
+    <li>Фирма делает <strong>личные рекомендации (investment advice)</strong> в отношении designated investments — включая рекомендации <strong>купить, держать или продать</strong></li>
+    <li>Фирма <strong>управляет инвестициями</strong> от имени retail-клиента</li>
+    <li>Фирма управляет активами <strong>occupational pension scheme, stakeholder pension scheme или personal pension scheme</strong> — кроме MiFID / equivalent third-country / optional exemption business</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Ключевые нюансы suitability</div>
+    MiFID suitability охватывает <strong>BUY + HOLD + SELL</strong> — не только рекомендации «купить». Совет «держать позицию» тоже требует suitability.<br>
+    Non-MiFID: suitability только для retail + управление активами пенсионных схем.<br>
+    Execution-only и общая информация — suitability НЕ требуется.<br>
+    Личная рекомендация = рекомендация <strong>конкретному лицу</strong> по <strong>конкретному инструменту</strong>.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Стимулирование сотрудников</div>
+  <p class="para">FCA ожидает от фирм политик и процедур, гарантирующих понимание природы, характеристик (включая затраты и риски) инструментов для клиентов. Особое внимание: риск, что схемы стимулирования повышают вероятность misselling; мониторинг пиков в паттернах продаж отдельных советников; контроль non-advised продаж, чтобы продающий персонал не давал личных рекомендаций.</p>
+</div>
+
+<div class="section-card" id="s72">
+  <div class="section-num">7.2</div>
+  <h2 class="section-title">Информация для suitability — 3 области</h2>
+  <p class="para">Для MiFID-бизнеса при предоставлении investment advice или portfolio management MiFID II требует информации по <strong>трём областям</strong>:</p>
+  <table class="comp-table">
+    <tr><th>#</th><th>Область</th><th>Что собирать</th></tr>
+    <tr><td>1</td><td><strong>Knowledge and Experience</strong></td><td>Типы услуг/сделок/инвестиций, с которыми знаком клиент; характер, объём, частота и период прошлых сделок; уровень образования, профессия</td></tr>
+    <tr><td>2</td><td><strong>Financial Situation</strong></td><td>Включая <strong>способность нести убытки</strong></td></tr>
+    <tr><td>3</td><td><strong>Investment Objectives</strong></td><td>И <strong>риск-аппетит / риск-профиль</strong></td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Опора на информацию клиента</div>
+    Фирма <strong>вправе полагаться</strong> на предоставленную клиентом информацию — <strong>если только она явно не устарела, недостоверна или неполна</strong>. Фирма не обязана верифицировать каждое утверждение, но при явных несоответствиях должна запросить уточнение.
+  </div>
+  <div class="warn-box">
+    <div class="wb-title">КРИТИЧЕСКОЕ правило — неполная информация</div>
+    Фирмы <strong>НЕ ДОЛЖНЫ отговаривать</strong> клиентов от предоставления информации. Если фирма не получила необходимую информацию — она <strong>не может давать личную рекомендацию или принимать торговые решения</strong> за клиента. Все 3 области обязательны.
+  </div>
+</div>
+
+<div class="section-card" id="s73">
+  <div class="section-num">7.3</div>
+  <h2 class="section-title">Suitability для Professional Clients</h2>
+  <table class="comp-table">
+    <tr><th>Тип клиента</th><th>Предположение о знаниях/опыте</th><th>Предположение о способности нести убытки</th></tr>
+    <tr><td><strong>Per se professional</strong></td><td>✓ Можно предполагать</td><td>✓ Можно предполагать</td></tr>
+    <tr><td><strong>Elective professional</strong></td><td>✓ Можно предполагать</td><td>✗ НЕЛЬЗЯ — необходимо оценивать</td></tr>
+    <tr><td><strong>Retail</strong></td><td>✗ Нельзя — необходимо оценивать</td><td>✗ Нельзя — необходимо оценивать</td></tr>
+  </table>
+  <div class="exam-box">
+    <div class="xb-title">Ключевые факты для экзамена</div>
+    <strong>Per se professional</strong> — можно предполагать ОБА (знания/опыт И способность нести убытки).<br>
+    <strong>Elective professional</strong> — можно предполагать ТОЛЬКО знания/опыт. Способность нести убытки — оценивать.<br>
+    <strong>Retail</strong> — оценивать всё полностью.<br>
+    Suitability для профессионалов НЕ исчезает — предположения лишь снижают нагрузку, но фирма всё равно проверяет соответствие целям клиента.
+  </div>
+</div>
+
+<div class="section-card" id="s74">
+  <div class="section-num">7.4</div>
+  <h2 class="section-title">Churning and Switching — избыточная торговля</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> Определения</div>
+  <p class="para"><strong>Churning</strong> — чрезмерная торговля, более частая, чем необходима клиенту, с целью <strong>генерации дополнительных комиссий для фирмы</strong>. Одно из грубейших нарушений фидуциарных обязанностей. Наиболее актуально в контексте <strong>дискреционного управления портфелем</strong>.</p>
+  <p class="para"><strong>Switching</strong> — продажа одной инвестиции и замена другой. Само по себе не является нарушением, но частые или ненужные переключения могут стать churning.</p>
+  <div class="info-box">
+    <div class="ib-title">Правило «коллективной непригодности»</div>
+    Серия сделок, каждая из которых в отдельности может быть подходящей, <strong>может не быть подходящей в совокупности</strong>, если рекомендации и/или торговые решения <strong>настолько часты, что наносят ущерб клиенту</strong>. Фирмы должны учитывать <strong>инвестиционную стратегию клиента</strong> при определении частоты сделок.
+  </div>
+  <div class="example-box">
+    <div class="eb-title">Пример churning vs законный switch</div>
+    <strong>Churning:</strong> дискреционный управляющий совершает 35 сделок за месяц для консервативного розничного клиента с долгосрочной стратегией. Каждая сделка может быть обоснована, но коллективно они наносят ущерб (транзакционные затраты, налоги, риск торговли по рынку).<br><br>
+    <strong>Законный switch:</strong> клиент держит Фонд A (AMC 1,8%). Появляется Фонд B с той же стратегией, AMC 0,8%. Фирма переключает клиента. Это законно: клиент получает лучшую ценность, стратегия неизменна.
+  </div>
+</div>
+
+<div class="section-card" id="s75">
+  <div class="section-num">7.5</div>
+  <h2 class="section-title">The Suitability Report</h2>
+  <p class="para">Письменный документ для клиента, объясняющий рекомендацию. MiFID II расширил требования: suitability report обязателен для retail-клиентов при <strong>любом investment advice (личной рекомендации)</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Когда требуется suitability report</div>
+  <p class="para">При личной рекомендации по: акциям, деривативам, структурированным продуктам, unregulated CIS; regulated CIS (в ряде случаев — ISA через savings scheme, инвестиционные трасты и т.д.); пенсионным переводам/opt-outs/краткосрочным аннуитетам/снятию дохода; полисам страхования жизни.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 5 исключений из требования о suitability report</div>
+  <ul class="bullet">
+    <li>Фирма как <strong>investment manager</strong> даёт личную рекомендацию по <strong>regulated CIS</strong></li>
+    <li>Клиент <strong>обычно проживает за пределами UK</strong> или не находится в UK в момент подтверждения</li>
+    <li>Личная рекомендация от <strong>friendly society</strong> по <strong>small life policy</strong> — премия <strong>≤ £50/год</strong> или (при еженедельной уплате) <strong>≤ £1/неделю</strong></li>
+    <li>Личная рекомендация — <strong>увеличить регулярную премию по существующему договору</strong></li>
+    <li>Личная рекомендация — инвестировать <strong>дополнительные единовременные премии в существующий packaged product</strong>, по которому ранее была уплачена единовременная премия</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Числа friendly society</div>
+    <strong>£50/год или £1/неделю</strong> — пороги для исключения small life policy. Типичные ловушки: £100, £25 — всё неверно.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Сроки предоставления suitability report</div>
+  <table class="comp-table">
+    <tr><th>Ситуация</th><th>Срок</th></tr>
+    <tr><td>Полис страхования жизни</td><td><strong>До</strong> заключения договора — или <em>немедленно после</em> в durable medium, если информация была устной ИЛИ требуется немедленное покрытие</td></tr>
+    <tr><td>Personal/stakeholder pension (если применяются правила cancellation)</td><td>В течение <strong>14 дней</strong> с момента заключения</td></tr>
+    <tr><td>Другие случаи</td><td>До сделки — или <em>как можно скорее</em> после, если дистанционный маркетинг</td></tr>
+  </table>
+  <div class="sub-title"><span class="sub-num">▸</span> 3 обязательных элемента содержания</div>
+  <ul class="bullet">
+    <li>Укажите <strong>потребности и цели клиента</strong></li>
+    <li>Объясните <strong>возможные недостатки</strong> сделки для клиента</li>
+    <li>Объясните, <strong>почему фирма пришла к выводу о пригодности</strong> рекомендованной сделки с учётом предоставленной клиентом информации</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s76">
+  <div class="section-num">7.6</div>
+  <h2 class="section-title">Insistent Clients — клиенты, настаивающие вопреки рекомендации</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> Определение insistent client — 3 условия</div>
+  <ul class="bullet">
+    <li>Фирма <strong>дала клиенту личную рекомендацию</strong></li>
+    <li>Клиент решает <strong>НЕ заключать сделку</strong> или заключить сделку, <strong>отличную</strong> от рекомендованной</li>
+    <li>Клиент <strong>просит фирму исполнить</strong> сделку (вопреки несогласию)</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 элемента, которые необходимо сообщить insistent client</div>
+  <p class="para">При исполнении сделки для insistent client фирма должна сообщить — fair, clear and not misleading — <strong>все 4 элемента</strong> до исполнения сделки:</p>
+  <ul class="bullet">
+    <li>Фирма <strong>не рекомендовала эту сделку</strong>, и сделка не соответствует личной рекомендации</li>
+    <li><strong>Причины</strong> несоответствия сделки рекомендации</li>
+    <li><strong>Риски</strong> предлагаемой клиентом сделки</li>
+    <li><strong>Причины</strong>, по которым фирма не рекомендовала эту сделку</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Подтверждение от клиента</div>
+    Кроме того: фирма <strong>должна получить подтверждение от insistent client</strong>, что сделка не соответствует личной рекомендации фирмы и осуществляется <strong>по запросу клиента</strong>.
+  </div>
+  <div class="warn-box">
+    <div class="wb-title">Обязана ли фирма исполнить?</div>
+    После сообщения 4 элементов + получения подтверждения фирма <strong>МОЖЕТ решить исполнить</strong> — это вопрос суждения. Автоматического запрета НЕТ. Равно как и нет обязанности исполнить, если фирма считает это вредным для клиента.
+  </div>
+</div>
+
+<div class="section-card" id="s77">
+  <div class="section-num">7.7</div>
+  <h2 class="section-title">Appropriateness — тест для Non-Advised Sales</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> Сфера применения</div>
+  <p class="para">Применяется к: MiFID-услугам (кроме личных рекомендаций и управления инвестициями); arranging/dealing в варрантах и деривативах для retail-клиентов по direct offer financial promotion; фирмам, оценивающим appropriateness от имени других UK MiFID-фирм.</p>
+  <div class="info-box">
+    <div class="ib-title">Только 1 область информации (vs 3 для suitability)</div>
+    Appropriateness требует информации только о <strong>знаниях и опыте (knowledge and experience)</strong> клиента в конкретном типе продукта/услуги. Финансовое положение и инвестиционные цели — не нужны.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Предположения для professional clients</div>
+  <p class="para">Для appropriateness фирма <strong>вправе предполагать</strong>, что <strong>professional client (как per se, так и elective)</strong> обладает необходимыми знаниями и опытом для продуктов/услуг, по которым он классифицирован как professional.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Что делать при неподходящем продукте / отказе от информации</div>
+  <ul class="bullet">
+    <li>Продукт/услуга <strong>НЕ является подходящим</strong> → фирма <strong>ОБЯЗАНА ПРЕДУПРЕДИТЬ</strong> клиента (предупреждение может быть стандартным)</li>
+    <li>Клиент <strong>отказывается предоставить информацию</strong> → фирма <strong>ОБЯЗАНА ПРЕДУПРЕДИТЬ</strong>, что не может оценить appropriateness</li>
+    <li>В обоих случаях: клиент может настаивать → фирма <strong>вправе решить</strong> исполнить (нет автоматического запрета)</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s78">
+  <div class="section-num">7.8</div>
+  <h2 class="section-title">Execution-Only и non-complex instruments</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> 3 условия для execution-only (все должны выполняться)</div>
+  <ul class="bullet">
+    <li>Услуга предоставляется <strong>по инициативе клиента</strong> (execution-only или приём/передача поручений)</li>
+    <li>Клиент <strong>чётко информирован</strong>, что фирма <strong>НЕ оценивает appropriateness</strong> и он не получит эту защиту</li>
+    <li>Фирма <strong>соблюдает обязательства по управлению конфликтами интересов</strong></li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 критерия non-complex instrument (все должны выполняться)</div>
+  <ul class="bullet">
+    <li><strong>НЕ дериватив</strong></li>
+    <li><strong>Достаточная ликвидность</strong></li>
+    <li>Обязательства клиента <strong>НЕ превышают стоимость приобретения</strong> — клиент не может потерять больше уплаченного</li>
+    <li><strong>Публично доступная исчерпывающая информация</strong></li>
+  </ul>
+  <table class="comp-table">
+    <tr><th>Non-complex (execution-only OK)</th><th>Complex (требуется appropriateness)</th></tr>
+    <tr><td>Акции на UK/EEA регулируемом рынке</td><td>Варранты</td></tr>
+    <tr><td>Инструменты денежного рынка</td><td>Деривативы (фьючерсы, опционы, CFD)</td></tr>
+    <tr><td>Облигации <strong>без встроенных деривативов</strong></td><td>Структурированные продукты со встроенными деривативами</td></tr>
+    <tr><td><strong>UCITS funds</strong> (явно в правилах)</td><td>Хедж-фонды, не допущенные к регулируемому рынку</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Серия аналогичных сделок</div>
+    Фирмы <strong>не обязаны заново оценивать appropriateness</strong> для <strong>серии аналогичных сделок</strong>. Но при <strong>начале новой услуги</strong> — оценку необходимо провести заново. Пример: клиент совершил 50 сделок в акциях (non-complex) — повторная оценка не нужна. Но если клиент хочет торговать CFD (complex) — это новая услуга, требуется новая оценка appropriateness.
+  </div>
+</div>
+
+<div class="summary-card" id="sum7">
+  <div class="summary-title">📋 Итоговое резюме — Section 7</div>
+  <ul>
+    <li><strong>3 режима:</strong> Suitability (advised, 3 области, полная ответственность) / Appropriateness (non-advised complex, 1 область, предупреждение) / Execution-only (3 условия + non-complex, никаких оценок).</li>
+    <li><strong>7.1 Suitability применяется к:</strong> (a) личные рекомендации по designated investments (buy/hold/sell); (b) управление инвестициями retail-клиентов; (c) управление активами пенсионных схем (кроме MiFID/equivalent third-country).</li>
+    <li><strong>7.2 Информация — 3 области:</strong> (1) знания и опыт (типы сделок, частота, образование/профессия); (2) финансовое положение (включая способность нести убытки); (3) инвестиционные цели + риск-аппетит. Фирма вправе опираться на информацию клиента (если не явно устарела). Неполная информация → нельзя advise/trade.</li>
+    <li><strong>7.3 Professional clients:</strong> Per se: предполагать и знания, и способность нести убытки. Elective: предполагать только знания; способность нести убытки — оценивать. Retail: оценивать всё.</li>
+    <li><strong>7.4 Churning:</strong> чрезмерная торговля для генерации комиссий. Наиболее актуально для дискреционного управления. Серия сделок, каждая из которых подходит, может быть коллективно неподходящей, если слишком частая. Учитывать инвестиционную стратегию клиента.</li>
+    <li><strong>7.5 Suitability Report:</strong> требуется для: акций, деривативов, структурированных продуктов, unregulated CIS, regulated CIS (в ряде случаев), пенсионных переводов/opt-outs/аннуитетов/снятия дохода, полисов страхования жизни. 5 исключений: investment manager + regulated CIS / клиент вне UK / friendly society small life (≤£50/год или ≤£1/неделю) / увеличение регулярной премии / дополнительная единовременная премия в существующий packaged product. Сроки: life policy — до или сразу после (durable medium) / personal/stakeholder pension (cancelation rules) — 14 дней / другие — до сделки или ASAP после. Содержание: (1) потребности/цели; (2) недостатки; (3) почему подходит.</li>
+    <li><strong>7.6 Insistent clients — 3 условия:</strong> дана личная рекомендация + клиент не следует ей + просит исполнить. 4 элемента: не рекомендовали + причины несоответствия + риски + причины нерекомендации. Получить подтверждение. Фирма МОЖЕТ исполнить (не автоматически обязана или запрещена).</li>
+    <li><strong>7.7 Appropriateness:</strong> только знания и опыт. Professional assumed (per se + elective). Не подходит → ПРЕДУПРЕДИТЬ (стандартное OK). Отказ от информации → ПРЕДУПРЕДИТЬ. Клиент настаивает → фирма решает.</li>
+    <li><strong>7.8 Execution-only:</strong> 3 условия + non-complex (4 критерия: не дериватив / ликвидность / ответственность ≤ стоимость покупки / публичная исчерпывающая информация). Non-complex: акции на регулируемом рынке, инструменты денежного рынка, облигации без встроенных деривативов, UCITS. Complex: варранты, деривативы, структурированные продукты со встроенными деривативами. Серия аналогичных сделок — без повторной оценки. Новая услуга — новая оценка.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

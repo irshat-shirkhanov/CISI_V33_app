@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 2 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 2 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Appointed Representatives (ARs) · Syllabus 2.2 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text"><strong>Appointed Representative (AR)</strong> — своеобразный «спутник» авторизованной фирмы. AR сам не имеет лицензии FCA, но может осуществлять регулируемую деятельность <strong>под крылом</strong> другой фирмы — <strong>принципала (principal)</strong>. Принципал несёт полную ответственность за действия AR, как если бы AR был его сотрудником. В 2022 году FCA существенно ужесточила режим AR после нескольких скандалов — эта секция объясняет, как система работает сегодня.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#what">Что такое AR и зачем он нужен</a></li>
+    <li>→ <a href="#s21">2.1 Как COBS применяется к AR</a></li>
+    <li>→ <a href="#s22">2.2 Финансовые рекламные материалы AR</a></li>
+    <li>→ <a href="#s23">2.3 Какую деятельность может вести AR</a></li>
+    <li>→ <a href="#s24">2.4 Реформы 2022 года</a></li>
+    <li>→ <a href="#sum2">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="what">
+  <div class="section-num">Введение</div>
+  <h2 class="section-title">Что такое AR и зачем он нужен</h2>
+  <p class="para">По базовому принципу FSMA 2000, для осуществления регулируемой деятельности в UK нужно быть <strong>авторизованным</strong> или <strong>освобождённым</strong> лицом. AR — это именно освобождённое лицо по <strong>Section 39 FSMA</strong> и <strong>FSMA (Appointed Representatives) Regulations 2001</strong>.</p>
+  <p class="para">Идея проста: крупная авторизованная фирма хочет распространять свои услуги через небольших местных агентов. Вместо того чтобы каждый проходил дорогостоящую и медленную авторизацию FCA, они становятся AR этой крупной фирмы — и работают <strong>под её лицензией и ответственностью</strong>.</p>
+  <div class="info-box"><div class="ib-title">Схема Principal ↔ AR ↔ Клиент</div>
+    FCA (регулятор) → выдаёт лицензию → <strong>PRINCIPAL FIRM</strong> (авторизован, несёт ответственность за AR) → письменный договор → <strong>AR</strong> (НЕ авторизован, освобождён по Section 39) → работает с клиентом.
+  </div>
+  <div class="example-box"><div class="eb-title">Реальный пример</div>Крупная страховая компания Aviva (принципал) хочет продавать полисы страхования жизни по всей стране. Вместо 500 собственных отделений она подписывает соглашения с 500 небольшими брокерскими фирмами. Каждая становится AR Aviva — продаёт её полисы, получает комиссию, но технически не авторизована FCA. Ответственность за их действия лежит на Aviva.</div>
+  <div class="warn-box"><div class="wb-title">Ключевая идея режима AR</div>Освобождение от авторизации — не «бесплатный проезд». Оно предоставляется в обмен на то, что <strong>принципал принимает на себя полную ответственность</strong> за действия AR и его постоянный надзор. Меньше бюрократии для AR — но вся правовая ответственность лежит на принципале.</div>
+</div>
+
+<div class="section-card" id="s21">
+  <div class="section-num">2.1</div>
+  <h2 class="section-title">Как COBS применяется к Appointed Representatives</h2>
+  <p class="para">Правила COBS применяются к <strong>фирмам в отношении деятельности, которую от их имени ведут AR</strong>. COBS формально <strong>не применяется напрямую к AR</strong> (AR — освобождённое лицо). Но любая деятельность AR, за которую принципал принял ответственность, <strong>считается деятельностью самого принципала</strong>.</p>
+  <div class="info-box"><div class="ib-title">Важный правовой момент</div>Формально AR не авторизован → правила FCA к нему не применяются напрямую. На практике, <strong>через принципала</strong>, они применяются в полном объёме. Если AR нарушает COBS — регулятор обращается не к AR (у него нет формальных регуляторных отношений с AR), а к <strong>принципалу</strong>.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> Что обязан делать принципал</div>
+  <ul class="bullet">
+    <li>Принципал <strong>должен держать соответствующие разрешения</strong> на виды деятельности, которые будет вести AR</li>
+    <li>Внутри AR-фирмы определённые лица должны быть <strong>одобрены для controlled functions</strong> (директора, партнёры, лица, работающие с клиентами)</li>
+    <li>Принципал обязан проводить <strong>тщательную проверку пригодности и поведения AR</strong> — как до назначения, так и на постоянной основе</li>
+  </ul>
+  <div class="example-box"><div class="eb-title">Пример — разрешения принципала</div>Брокерская фирма «City Brokers Ltd» имеет разрешение только на <em>arranging deals</em>. Она хочет назначить AR, который будет консультировать клиентов по инвестициям. Это <strong>невозможно</strong>: чтобы AR мог давать советы, City Brokers должна сначала получить разрешение на <em>advising on investments</em>.</div>
+</div>
+
+<div class="section-card" id="s22">
+  <div class="section-num">2.2</div>
+  <h2 class="section-title">Финансовые рекламные материалы AR — ключевая тема</h2>
+  <p class="para">По <strong>Section 21 FSMA</strong> финансовый рекламный материал (financial promotion) может распространять только <strong>авторизованное</strong> или <strong>освобождённое</strong> лицо. AR — освобождённое лицо, значит технически промоушн AR является <em>exempt promotion</em> и формально не требует одобрения. <strong>Однако!</strong> FCA специально включила в COBS: фирма (принципал) обязана обеспечить, чтобы AR соблюдали правила COBS при распространении <strong>любых</strong> финансовых рекламных материалов. Формальный «освобождённый» статус не снимает с принципала ответственности за содержание.</p>
+  <div class="example-box"><div class="eb-title">Сценарий: AR рассылает плохой маркетинговый email</div>«AR Solutions Ltd» — appointed representative «PrincipalCorp plc». AR Solutions рассылает маркетинговый email о новом инвестиционном продукте. Email содержит вводящие в заблуждение сведения об исторической доходности.<br><br>Кто несёт ответственность? <strong>PrincipalCorp plc</strong>. Несмотря на то что email отправил AR, принципал несёт правовую ответственность за содержание всех финансовых рекламных материалов AR. FCA оштрафует PrincipalCorp.</div>
+  <div class="exam-box"><div class="xb-title">Ключевой факт для экзамена</div>За какие промоушны несёт ответственность принципал? <strong>За все типы</strong> — не только MiFID, не только розничные, не только высокорисковые. <strong>ВСЕ</strong>.</div>
+</div>
+
+<div class="section-card" id="s23">
+  <div class="section-num">2.3</div>
+  <h2 class="section-title">Виды регулируемой деятельности, которые может вести AR</h2>
+  <p class="para">AR Regulations <strong>ограничивают</strong> перечень регулируемых видов деятельности, которые AR может вести в рамках освобождения. Список закрытый:</p>
+  <table class="comp-table">
+    <tr><th>Деятельность</th><th>Статус для AR</th></tr>
+    <tr><td>Dealing in investments as agent — только pure protection или general insurance contracts</td><td>✓ Разрешено (с ограничениями)</td></tr>
+    <tr><td>Arranging deals in investments и making arrangements</td><td>✓ Разрешено</td></tr>
+    <tr><td>Arranging deals in home finance transactions</td><td>✓ Разрешено</td></tr>
+    <tr><td>Assisting in the administration and performance of a contract of insurance</td><td>✓ Разрешено</td></tr>
+    <tr><td>Arranging the safeguarding and administration of assets</td><td>✓ Разрешено</td></tr>
+    <tr><td>Advising on investments</td><td>✓ Разрешено</td></tr>
+    <tr><td>Giving basic advice on stakeholder products</td><td>✓ Разрешено</td></tr>
+    <tr><td>Advising on home finance transactions</td><td>✓ Разрешено</td></tr>
+    <tr><td>Agreeing to carry on a regulated activity</td><td>✓ Разрешено</td></tr>
+    <tr><td>Operating electronic platforms in relation to lending (P2P)</td><td>✓ Разрешено</td></tr>
+    <tr><td>Certain consumer credit related activities</td><td>✓ Разрешено</td></tr>
+    <tr><td><strong>Dealing in investments AS PRINCIPAL</strong></td><td>✗ <strong>ЗАПРЕЩЕНО</strong></td></tr>
+    <tr><td><strong>Managing investments</strong> (portfolio management)</td><td>✗ <strong>ЗАПРЕЩЕНО</strong></td></tr>
+  </table>
+  <div class="warn-box"><div class="wb-title">Два запрещённых вида деятельности — нужно помнить</div>AR <strong>НЕ МОЖЕТ</strong>:<br>1. <strong>Deal as principal</strong> — торговать за собственный счёт<br>2. <strong>Manage investments</strong> — дискреционное управление портфелем<br>Оба считаются слишком высокорисковыми для освобождённого статуса и требуют прямой авторизации FCA.</div>
+  <div class="info-box"><div class="ib-title">Нюанс по dealing as agent</div>AR может dealing as agent, но <strong>только</strong> для <strong>pure protection contracts</strong> (полисы страхования жизни, только защитные) и <strong>general insurance contracts</strong> (автомобиль, имущество). AR не может быть агентом при сделках с акциями, облигациями или деривативами.</div>
+</div>
+
+<div class="section-card" id="s24">
+  <div class="section-num">2.4</div>
+  <h2 class="section-title">Реформы 2022 года — что изменилось и почему</h2>
+  <p class="para">В 2021 году FCA провела консультации по реформированию режима AR. Причина — серия скандалов, когда AR причиняли ущерб потребителям, а принципалы не осуществляли надлежащего надзора. Новые правила <strong>вступили в силу в конце 2022 года</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 целевых исхода реформы</div>
+  <ul class="bullet">
+    <li>Принципалы <strong>в полной мере понимают свои обязанности</strong> в отношении AR и осуществляют более качественный надзор</li>
+    <li>FCA может <strong>более эффективно оспаривать</strong> фирмы, которые имеют или планируют назначить AR</li>
+    <li>Принципалы <strong>устраняют проблемы</strong>, причиняющие или способные причинить ущерб потребителям или рынкам</li>
+    <li>Розничные потребители получают доступ к <strong>более качественной информации</strong> о принципалах и AR</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> Конкретные новые требования — уведомление и информация</div>
+  <table class="comp-table">
+    <tr><th>Требование</th><th>Сроки / детали</th></tr>
+    <tr><td>Уведомить FCA о <strong>новом</strong> назначении AR</td><td><strong>За 30 дней ДО</strong> назначения</td></tr>
+    <tr><td>Предоставить информацию о <strong>существующих</strong> AR (разовое при введении правил)</td><td><strong>В течение 60 дней</strong> с момента вступления правил в силу</td></tr>
+    <tr><td>Данные о деятельности AR и их бизнесе</td><td>На постоянной основе</td></tr>
+    <tr><td>Данные о <strong>жалобах</strong> на AR и их <strong>выручке</strong></td><td>Регулярно в FCA</td></tr>
+    <tr><td>Уведомление FCA о предоставлении <strong>regulatory hosting</strong> услуг</td><td>При изменении</td></tr>
+  </table>
+  <div class="warn-box"><div class="wb-title">Числа для экзамена — не перепутайте!</div><strong>30 дней</strong> = уведомление FCA о НОВОМ назначении AR (ДО назначения).<br><strong>60 дней</strong> = разовый дедлайн для информации о СУЩЕСТВУЮЩИХ AR при вступлении правил в силу в 2022 году.<br>Контекст имеет решающее значение.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> Конкретные новые требования — ответственность</div>
+  <ul class="bullet">
+    <li>Расширенный надзор за AR: <strong>адекватные системы и контроль</strong>, достаточные ресурсы, мониторинг роста AR</li>
+    <li>Более эффективная ответственность: мониторинг рисков ущерба потребителям и рыночной целостности; надзор <strong>сопоставимый со стандартом надзора за прямыми сотрудниками</strong></li>
+    <li>Ясность по обстоятельствам прекращения отношений с AR и содействию в <strong>orderly wind down</strong></li>
+    <li><strong>Ежегодный обзор</strong> деятельности AR + <strong>самооценочный документ (self-assessment document)</strong></li>
+  </ul>
+  <div class="info-box"><div class="ib-title">Ключевой стандарт надзора</div>FCA прямо указала: принципал обязан осуществлять надзор за AR <strong>на уровне, сопоставимом с надзором за прямыми сотрудниками</strong>. Это очень высокая планка — «коммерчески разумный» или «разумный надзор» недостаточен.</div>
+</div>
+
+<div class="summary-card" id="sum2">
+  <div class="summary-title">📋 Итоговое резюме — Section 2</div>
+  <ul>
+    <li><strong>AR = освобождённое лицо</strong> по Section 39 FSMA + FSMA (Appointed Representatives) Regulations 2001.</li>
+    <li><strong>Принципал</strong> должен держать разрешения, соответствующие деятельности AR. Без разрешения принципала — AR не может вести деятельность.</li>
+    <li><strong>COBS применяется к принципалу</strong> в отношении деятельности AR. Деятельность AR = деятельность принципала в целях ответственности.</li>
+    <li><strong>Финансовые рекламные материалы AR:</strong> технически освобождённые, но принципал несёт ответственность за содержание <strong>всех типов</strong> промоушнов AR.</li>
+    <li><strong>AR НЕ МОЖЕТ:</strong> dealing as principal + managing investments. Dealing as agent — только pure protection / general insurance.</li>
+    <li><strong>Реформы 2022:</strong> уведомление FCA за <strong>30 дней</strong> до нового AR. Разовый срок для существующих AR — <strong>60 дней</strong>. Надзор на уровне прямых сотрудников. Ежегодный обзор + self-assessment. Данные о жалобах + выручке. Ясность по прекращению + orderly wind down.</li>
+    <li><strong>4 исхода реформы:</strong> (1) принципалы понимают обязанности; (2) FCA может оспаривать фирмы; (3) проблемы устраняются; (4) лучшая информация для розничных потребителей.</li>
+    <li><strong>Формула ответственности:</strong> AR ведёт деятельность → принципал несёт полную ответственность. AR нарушает COBS → FCA штрафует принципала.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

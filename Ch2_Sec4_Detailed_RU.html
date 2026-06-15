@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 4 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 4 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Client Agreements and Information Provision · Syllabus 2.4 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 4 отвечает на два практических вопроса: <strong>«Что должно быть в письменном соглашении с клиентом»</strong> и <strong>«Какую информацию фирма обязана предоставить клиенту до начала обслуживания»</strong>. Это базовая «гигиена» отношений фирма↔клиент: соглашение, информация о фирме, раскрытие рисков, затрат и компенсационных схем. На экзамене — 3–5 вопросов, много деталей о сроках, форматах и исключениях.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#phil">Философия секции</a></li>
+    <li>→ <a href="#s41">4.1 Клиентское соглашение</a></li>
+    <li>→ <a href="#s42">4.2 Требования к информации</a></li>
+    <li>→ <a href="#s421">4.2.1 Характер и риски инвестиций</a></li>
+    <li>→ <a href="#s422">4.2.2 Информация о фирме</a></li>
+    <li>→ <a href="#s423">4.2.3 Управление инвестициями</a></li>
+    <li>→ <a href="#s424">4.2.4 Safeguarding — защита активов клиента</a></li>
+    <li>→ <a href="#s43">4.3 Раскрытие затрат</a></li>
+    <li>→ <a href="#timing">4.3.1 Сроки и формат</a></li>
+    <li>→ <a href="#update">4.3.2 Обновление информации</a></li>
+    <li>→ <a href="#exist">4.3.3 Существующие клиенты</a></li>
+    <li>→ <a href="#comp">4.3.4 Компенсационная информация (FSCS)</a></li>
+    <li>→ <a href="#sum4">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="phil">
+  <div class="section-num">Введение</div>
+  <h2 class="section-title">Философия секции: защита клиента через прозрачность</h2>
+  <p class="para">Основная проблема финансовых услуг — <strong>информационная асимметрия</strong>. Фирма знает о продукте, рисках, затратах и условиях договора значительно больше, чем клиент. Section 4 — конкретный инструмент устранения этой асимметрии. Он обязывает фирму: закрепить права и обязанности в <strong>письменном соглашении</strong>; проактивно <strong>раскрыть информацию</strong> о себе, продуктах, рисках, затратах; <strong>поддерживать актуальность</strong> информации; делать всё это через <strong>durable medium</strong>.</p>
+  <div class="warn-box">
+    <div class="wb-title">Базовый принцип: «in good time before»</div>
+    Почти каждое раскрытие в этой секции должно происходить <strong>«in good time before»</strong> (заблаговременно до) момента, когда клиент становится связанным соглашением или до начала услуг. Типичная ловушка экзамена: варианты ответов «after», «at the time», «within 14 days» — все неверны; правильный — «<strong>in good time before</strong>».
+  </div>
+  <div class="info-box">
+    <div class="ib-title">«Durable medium» — что это</div>
+    Любой носитель, позволяющий клиенту <strong>хранить</strong> информацию, адресованную лично ему, <strong>иметь к ней доступ</strong> в течение достаточного времени и <strong>воспроизводить её без изменений</strong>. Подходят: бумага, email, PDF, вложения к электронным сообщениям, при соблюдении условий — веб-сайт. SMS или устный разговор — <strong>не подходят</strong>.
+  </div>
+</div>
+
+<div class="section-card" id="s41">
+  <div class="section-num">4.1</div>
+  <h2 class="section-title">Требование о заключении клиентского соглашения</h2>
+  <table class="comp-table">
+    <tr><th>Вид бизнеса</th><th>Категория клиента</th><th>Соглашение нужно?</th></tr>
+    <tr><td>Designated investment business (в целом)</td><td>Retail client</td><td>✓ Да</td></tr>
+    <tr><td>MiFID business и ancillary services</td><td>Retail ИЛИ Professional</td><td>✓ Да</td></tr>
+    <tr><td>Designated investment business (non-MiFID)</td><td>Professional client</td><td>✗ Нет</td></tr>
+    <tr><td>Любой бизнес</td><td>ECP</td><td>✗ Нет (COBS 8A отключён)</td></tr>
+    <tr><td>Страховые фирмы, выпускающие полисы страхования жизни как принципал</td><td>Любая</td><td>✗ Нет (специальное исключение)</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Мнемоника для экзамена</div>
+    Retail: соглашение <strong>всегда</strong> при designated investment business.<br>
+    Professional: соглашение только для <strong>MiFID / ancillary / equivalent third-country</strong>.<br>
+    ECP: <strong>никогда</strong> (COBS 8A отключён).
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Форма соглашения</div>
+  <p class="para">Фирма обязана заключить <strong>письменное базовое соглашение</strong>, устанавливающее <strong>основные права и обязанности</strong> фирмы и клиента. На <strong>бумаге или ином durable medium</strong>. Типичное содержание: описание услуг / вознаграждение / отчётность / ограничения ответственности / процедура рассмотрения жалоб / условия расторжения / юрисдикция и применимое право.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Когда предоставляется соглашение</div>
+  <p class="para">Для retail-клиента — <strong>заблаговременно до</strong> заключения соглашения ИЛИ до начала инвестиционных услуг (что наступит раньше): условия соглашения + информация о фирме и услугах.</p>
+  <div class="info-box">
+    <div class="ib-title">Исключение: дистанционные коммуникации + телефон</div>
+    Если (a) <strong>клиент сам инициировал</strong> использование дистанционных коммуникаций (телефон, онлайн-форма) И (b) фирма соблюдает правила голосовых коммуникаций — соглашение и информация могут быть предоставлены <strong>сразу после</strong> заключения. Только по инициативе клиента, не фирмы.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Изменения условий соглашения</div>
+  <p class="para">Об <strong>изменениях условий</strong> нужно уведомить клиента <strong>заблаговременно ДО вступления в силу</strong> (не после!) в durable medium.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Сроки хранения документации</div>
+  <table class="comp-table">
+    <tr><th>Тип</th><th>Срок хранения</th></tr>
+    <tr><td>Базовый минимум</td><td><strong>5 лет</strong></td></tr>
+    <tr><td>Если отношения с клиентом длятся > 5 лет</td><td>Весь срок отношений</td></tr>
+    <tr><td>Пенсионный перевод / pension opt-out / FSAVC</td><td><strong>Бессрочно</strong></td></tr>
+  </table>
+</div>
+
+<div class="section-card" id="s421">
+  <div class="section-num">4.2.1</div>
+  <h2 class="section-title">Информация о характере и рисках инвестиций</h2>
+  <p class="para">COBS 2.2 и 2.2A устанавливают высокоуровневые требования к раскрытию информации для фирм, осуществляющих MiFID-бизнес. Фирма обязана предоставить клиентам — <strong>retail И professional</strong> (включая потенциальных) — в <strong>понятной форме</strong>:</p>
+  <ul class="bullet">
+    <li>Информацию о <strong>фирме и её услугах</strong></li>
+    <li>Информацию о <strong>designated investments и предлагаемых инвестиционных стратегиях</strong>, включая руководство и предупреждения о связанных рисках</li>
+    <li>Информацию об <strong>исполнительных площадках (execution venues)</strong></li>
+    <li>Информацию о <strong>затратах и связанных сборах</strong></li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">MiFID vs Non-MiFID — кому предоставляется</div>
+    MiFID: retail + professional (включая потенциальных).<br>
+    Non-MiFID: только retail. Исключение: non-MiFID с retail-клиентом по деривативам, варрантам или секьюритизации — раскрытие также обязательно (как по MiFID).
+  </div>
+</div>
+
+<div class="section-card" id="s422">
+  <div class="section-num">4.2.2</div>
+  <h2 class="section-title">Информация о фирме</h2>
+  <p class="para">Фирма обязана предоставить <strong>retail, professional и ECP клиентам</strong> (включая потенциальных) следующую общую информацию (где применимо):</p>
+  <ul class="bullet">
+    <li>Наименование и адрес фирмы; языки коммуникации (для MiFID)</li>
+    <li>Методы коммуникации с клиентом</li>
+    <li>Авторизованный статус + компетентный орган (FCA/PRA)</li>
+    <li>Информация об AR/tied agent, если применимо</li>
+    <li>Характер, периодичность и сроки отчётности клиенту</li>
+    <li>Политика управления конфликтами интересов</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s423">
+  <div class="section-num">4.2.3</div>
+  <h2 class="section-title">Управление инвестициями — дополнительные требования</h2>
+  <p class="para">При управлении инвестициями фирма обязана предоставить информацию о:</p>
+  <ul class="bullet">
+    <li><strong>Значимом бенчмарке</strong> (meaningful benchmark), относительно которого будет сравниваться доходность</li>
+    <li><strong>Деталях делегированного дискреционного управления</strong>, если применимо</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s424">
+  <div class="section-num">4.2.4</div>
+  <h2 class="section-title">Safeguarding — защита инвестиций и денег клиента</h2>
+  <p class="para">Когда фирма <strong>держит активы или деньги клиента</strong> — наиболее чувствительная ситуация. Информация о safeguarding должна предоставляться <strong>всем категориям клиентов</strong> (retail, professional, ECP), включая <strong>потенциальных</strong>.</p>
+  <div class="warn-box">
+    <div class="wb-title">Уникальное требование — распространяется даже на ECP</div>
+    Это одна из немногих областей, где обязательства по раскрытию распространяются на ECP. Логика: безопасность активов слишком важна, чтобы полагаться на «предполагаемую искушённость» ECP.
+  </div>
+  <p class="para">8 ключевых элементов раскрытия: возможное хранение третьей стороной + ответственность фирмы за её действия + что происходит при несостоятельности третьей стороны / отсутствие раздельной идентификации / иная юрисдикция и её последствия для прав клиента / обременение активов, залог, право зачёта / предоставление ценных бумаг взаймы / сводка мер защиты + детали FSCS/компенсационных схем / характер и объём полномочий фирмы / порядок возврата активов.</p>
+</div>
+
+<div class="section-card" id="s43">
+  <div class="section-num">4.3</div>
+  <h2 class="section-title">Раскрытие затрат и сборов</h2>
+  <p class="para">Обязательное раскрытие затрат — только для <strong>retail clients</strong>. Professional и ECP могут <strong>запросить</strong> эту информацию, но регуляторного обязательства предоставлять её нет.</p>
+  <p class="para">Фирма обязана раскрыть retail-клиентам информацию обо <strong>всех затратах и сборах</strong>, включая: <strong>итоговую цену</strong> (все комиссии, расходы, налоги) или, если невозможно — <strong>основу расчёта</strong>; затраты самой фирмы должны быть <strong>всегда выделены отдельно</strong> (обязательно в любом случае); при иностранной валюте — валюта, курс конвертации, связанные затраты; если могут возникнуть иные затраты/налоги — <strong>факт их возможного наличия и порядок уплаты</strong>.</p>
+  <div class="warn-box">
+    <div class="wb-title">Ключевое правило</div>
+    Затраты самой фирмы ВСЕГДА выделяются отдельно. Даже если не все затраты третьих сторон можно точно указать — <strong>собственные</strong> затраты фирмы должны быть чётко обозначены. Это требование не обсуждается.
+  </div>
+</div>
+
+<div class="section-card" id="timing">
+  <div class="section-num">4.3.1</div>
+  <h2 class="section-title">Сроки и формат раскрытия</h2>
+  <p class="para"><strong>По умолчанию:</strong> информация предоставляется <strong>заблаговременно до начала услуг фирмы</strong>.</p>
+  <p class="para"><strong>Исключение — дистанционные коммуникации:</strong> фирма может предоставить информацию <strong>сразу после</strong> начала услуг, если (a) по инициативе клиента соглашение заключено через дистанционные коммуникации, не позволившие предоставить информацию заранее, И (b) фирма соблюдает правила голосовых коммуникаций. Оба условия должны выполняться одновременно.</p>
+  <p class="para"><strong>Формат:</strong> в durable medium или, при соблюдении условий, через веб-сайт фирмы (клиент согласен на электронный канал, имеет технический доступ, материал стабилен, адрес сайта чётко указан).</p>
+</div>
+
+<div class="section-card" id="update">
+  <div class="section-num">4.3.2</div>
+  <h2 class="section-title">Поддержание актуальности информации</h2>
+  <p class="para">При <strong>существенном изменении</strong> ранее предоставленной информации — уведомить клиента <strong>заблаговременно</strong> в <strong>том же durable medium</strong>, что и исходная информация. Это предотвращает ситуации, когда клиент не замечает изменений из-за непривычного канала.</p>
+  <div class="example-box">
+    <div class="eb-title">Пример: повышение AMC</div>
+    Клиент имеет managed account; в соглашении прописана AMC 1,0%. Фирма повышает её до 1,25%. Это существенное изменение → уведомить <strong>до вступления в силу</strong> (не после!) в <strong>том же формате</strong>, что и исходные условия.
+  </div>
+</div>
+
+<div class="section-card" id="exist">
+  <div class="section-num">4.3.3</div>
+  <h2 class="section-title">Существующие клиенты — повторные сделки</h2>
+  <p class="para">Если клиент уже получил полное раскрытие при покупке, например, Фонда A — нужно ли повторять полное раскрытие при следующей покупке того же Фонда A? <strong>Нет</strong> — фирма не обязана рассматривать каждую сделку в том же типе финансового инструмента как новую услугу. Однако фирма должна убедиться, что клиент получил <strong>всю актуальную информацию</strong> для последующей сделки — например, если изменились сборы.</p>
+</div>
+
+<div class="section-card" id="comp">
+  <div class="section-num">4.3.4</div>
+  <h2 class="section-title">Компенсационная информация — FSCS</h2>
+  <p class="para">Обязанность по раскрытию информации о компенсационной схеме применяется к фирмам, <strong>осуществляющим MiFID-бизнес</strong>. Минимум, который нужно раскрыть <strong>проактивно</strong>: идентификация FSCS (или альтернативной схемы) + объём и охват покрытия. По <strong>запросу клиента</strong> дополнительно: условия получения компенсации + необходимые формальности.</p>
+  <div class="info-box">
+    <div class="ib-title">FSCS — основная UK компенсационная схема</div>
+    Депозиты в банках/строительных обществах: до <strong>£85 000</strong> на вкладчика на банк.<br>
+    Инвестиции: до <strong>£85 000</strong> на клиента на фирму.<br>
+    Обязательное страхование: <strong>100% без лимита</strong>.<br>
+    Необязательное страхование: <strong>90% без лимита</strong>.
+  </div>
+  <p class="para">Информация о компенсационной схеме предоставляется в durable medium или через веб-сайт (при соблюдении условий).</p>
+</div>
+
+<div class="summary-card" id="sum4">
+  <div class="summary-title">📋 Итоговое резюме — Section 4</div>
+  <ul>
+    <li><strong>Ключевые принципы:</strong> Все раскрытия — «<strong>in good time BEFORE</strong>» (заблаговременно до). Формат — «<strong>durable medium</strong>» (или веб-сайт при условиях). Существенные изменения — уведомить ДО вступления в силу + <strong>тот же формат</strong>. Затраты фирмы — ВСЕГДА выделяются отдельно. Safeguarding — для всех категорий, даже ECP.</li>
+    <li><strong>4.1 Клиентское соглашение:</strong> retail (всегда при designated investment business) + professional+retail (MiFID/ancillary). Не нужно ECP и страховщикам-принципалам. Письменно, in good time before. Исключение: дистанционные коммуникации по инициативе клиента + голосовые правила → сразу после. Изменения — ДО вступления в силу. Хранение: 5 лет / весь срок отношений / <strong>бессрочно для пенсионных переводов/opt-out/FSAVC</strong>.</li>
+    <li><strong>4.2.1 Характер и риски (MiFID):</strong> 4 категории — фирма/услуги + инвестиции/стратегии+риски + исполнительные площадки + затраты. Retail + professional (включая потенциальных).</li>
+    <li><strong>4.2.2 Информация о фирме:</strong> retail + professional + ECP (включая потенциальных). Наименование/адрес / языки / методы коммуникации / авторизованный статус / AR / отчётность / конфликты интересов.</li>
+    <li><strong>4.2.3 Управление инвестициями:</strong> значимый бенчмарк + детали делегированного дискреционного управления.</li>
+    <li><strong>4.2.4 Safeguarding:</strong> для retail + professional + ECP (включая потенциальных). 8 ключевых элементов: третьи стороны / non-segregation / иная юрисдикция / обременения/залог/зачёт / кредитование ценных бумаг / сводка мер защиты + компенсация / полномочия фирмы / порядок возврата активов.</li>
+    <li><strong>4.3 Затраты:</strong> обязательно только для retail. Итоговая цена + основа расчёта + затраты фирмы (всегда отдельно) + валюта + затраты третьих сторон/налоги + компенсационная информация.</li>
+    <li><strong>4.3.1 Сроки/формат:</strong> in good time before. Исключение (дистанционные + голосовые правила) → сразу после. Durable medium или веб-сайт (при условиях).</li>
+    <li><strong>4.3.2 Обновление:</strong> существенное изменение → уведомить + тот же формат.</li>
+    <li><strong>4.3.3 Существующие клиенты:</strong> повторная сделка в том же типе инструмента — полное раскрытие не нужно повторять. Но проверить наличие новой/изменённой информации.</li>
+    <li><strong>4.3.4 Компенсация:</strong> MiFID-фирмы. Проактивно: идентификация FSCS + объём покрытия. По запросу: условия + формальности. FSCS: £85К (депозиты) / £85К (инвестиции) / 100% без лимита (обязательное страхование) / 90% без лимита (необязательное страхование).</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

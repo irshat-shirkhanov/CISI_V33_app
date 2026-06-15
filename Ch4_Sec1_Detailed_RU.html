@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 4, Section 1 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 4</div>
+  <div class="app-title">Chapter 4, Section 1 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Consumer Rights Act 2015 · Syllabus 4.1 · CISI V33</div>
+</div>
+<div class="screen">
+
+<div class="intro-card"><div class="intro-title">О чём эта секция?</div><div class="intro-text"><strong>Consumer Rights Act 2015 (CRA)</strong> — UK закон о правах потребителей. Устанавливает статутные права в договорах о <strong>товарах, цифровом контенте и услугах</strong>, статутные средства защиты при нарушениях и реформирует режим <strong>несправедливых условий</strong>. FCA — <strong>qualifying body</strong> по CRA. Также: права на отмену (14/30 дней) + Consumer Duty. 2–3 вопроса на экзамене.</div></div>
+
+<div class="section-card"><div class="section-num">1.1</div><h2 class="section-title">CRA 2015 — 3 части + цели</h2>
+<p class="para">Цели CRA: (1) дать потребителям <strong>статутные права</strong> в договорах о товарах / цифровом контенте / услугах; (2) дать <strong>статутные средства защиты</strong> при нарушении этих прав; (3) реформировать и кодифицировать право о <strong>несправедливых условиях</strong> в потребительских договорах (Part 2).</p>
+<table class="comp-table"><tr><th>Часть</th><th>Содержание</th></tr>
+<tr><td><strong>Part 1</strong></td><td>Права и средства защиты потребителей в договорах о товарах, цифровом контенте, услугах</td></tr>
+<tr><td><strong>Part 2</strong></td><td>Несправедливые условия в потребительских договорах и уведомлениях</td></tr>
+<tr><td><strong>Part 3</strong></td><td>Разное и общие положения, включая полномочия по расследованию + вторичные билеты</td></tr></table></div>
+
+<div class="section-card"><div class="section-num">1.2</div><h2 class="section-title">Несправедливые условия — определение + серый список</h2>
+<div class="info-box"><div class="ib-title">Тест несправедливого условия</div>
+Условие является <strong>несправедливым</strong>, если, <strong>вопреки требованию добросовестности</strong>, оно создаёт <strong>значительный дисбаланс</strong> в правах и обязанностях сторон <strong>в ущерб потребителю</strong>. CRA явно включает <strong>индивидуально согласованные условия</strong> — нет автоматического освобождения.</div>
+<p class="para">Справедливость оценивается с учётом: характера предмета договора / всех обстоятельств на момент заключения / всех других условий договора.</p>
+<p class="para"><strong>«Серый список»</strong> CRA — показательный и неисчерпывающий список условий, которые <em>могут</em> считаться несправедливыми. Наличие в списке <strong>не означает автоматически несправедливость</strong> — определяется по обстоятельствам. Нарушение требования прозрачности также <strong>не означает автоматически несправедливость</strong>.</p></div>
+
+<div class="section-card"><div class="section-num">1.3–1.4</div><h2 class="section-title">FCA как Qualifying Body + Права на отмену</h2>
+<p class="para">По CRA FCA имеет <strong>статутные полномочия оспаривать несправедливые условия</strong> в потребительских договорах финансовых услуг. FCA — «qualifying body». Действия FCA: добиваться обязательств об изменении/удалении несправедливых условий / подавать в суд на судебный запрет / публиковать информацию. Судебный запрет <strong>предотвращает использование условия против БУДУЩИХ клиентов</strong>, но <strong>не аннулирует существующие договоры</strong>.</p>
+<table class="comp-table"><tr><th>Тип продукта</th><th>Период отмены</th></tr>
+<tr><td>Страхование жизни или пенсия (advised + дистанционные)</td><td><strong>30 календарных дней</strong></td></tr>
+<tr><td>Не-страхование жизни / не-пенсия (advised + дистанционные)</td><td><strong>14 календарных дней</strong></td></tr></table>
+<p class="para">Уведомление: отправленное <strong>до истечения срока</strong> — достаточно, даже если получено после. При инвестиционных продуктах (UCITS) потребитель может <strong>не получить обратно полную сумму</strong> — рыночные движения применяются.</p></div>
+
+<div class="summary-card"><div class="summary-title">📋 Итоговое резюме — Ch4 Section 1</div><ul>
+<li><strong>CRA 2015 — 3 части:</strong> Part 1 (права+средства защиты по товарам/цифровому/услугам) / Part 2 (несправедливые условия) / Part 3 (разное + следственные полномочия).</li>
+<li><strong>Несправедливое условие:</strong> вопреки добросовестности + значительный дисбаланс + в ущерб потребителю. Охватывает и индивидуально согласованные условия. «Серый список» — показательный, не автоматически несправедлив. Нарушение прозрачности ≠ автоматически несправедливо.</li>
+<li><strong>FCA — qualifying body:</strong> обязательства + судебные запреты (для будущих клиентов) + публикация информации.</li>
+<li><strong>Права на отмену:</strong> life/pension = <strong>30 дней</strong>. Другие = <strong>14 дней</strong>. Уведомление при отправке до срока — достаточно. Инвестиции — рыночные движения применяются.</li>
+</ul></div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 10 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 10 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Inducements and Payment for Research · Syllabus 2.14 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 10 — продолжение логики предыдущей секции (конфликты интересов). Охватывает <strong>inducements (вознаграждения/стимулы)</strong> — любые платежи, комиссии или неденежные выгоды, которые фирма получает от или выплачивает третьим сторонам в связи с обслуживанием клиента. Общее правило: <strong>всё, что прямо не разрешено, запрещено</strong>. Отдельно — <strong>правила оплаты инвестиционного исследования</strong>: фирмы платят либо из собственных ресурсов, либо через Research Payment Account (RPA). На экзамене 4–6 вопросов.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s101">10.1 Inducements — общее правило</a></li>
+    <li>→ <a href="#minor">Незначительные неденежные выгоды — 4 критерия</a></li>
+    <li>→ <a href="#three">3 категории разрешённых платежей</a></li>
+    <li>→ <a href="#nonmifid">Non-MiFID фирмы — отдельный режим</a></li>
+    <li>→ <a href="#s102">10.2 Inducements и исследования</a></li>
+    <li>→ <a href="#s103">10.3 Research Payment Account (RPA)</a></li>
+    <li>→ <a href="#s104">10.4 Payment Optionality — изменения августа 2024</a></li>
+    <li>→ <a href="#sum10">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s101">
+  <div class="section-num">10.1</div>
+  <h2 class="section-title">Inducements — общее правило и сфера применения</h2>
+  <div class="info-box">
+    <div class="ib-title">Правило inducements = «правило о платежах»</div>
+    Правила о inducements следует рассматривать как <strong>«правило о платежах»</strong>: они <strong>запрещают любые платежи, кроме прямо разрешённых</strong>. Это строгий режим.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Сфера применения</div>
+  <p class="para">Правила применяются к фирмам, осуществляющим designated investment business — как <strong>MiFID, так и non-MiFID</strong>. Применяются только к <strong>professional clients и retail clients</strong> — фирмы, осуществляющие <strong>ECP-бизнес, НЕ подпадают</strong> под детальные положения об inducements.</p>
+  <p class="para">Правила также охватывают случаи, когда фирма предоставляет retail-клиенту: <strong>independent advice</strong> / <strong>restricted advice</strong> / <strong>portfolio management services</strong> — хотя незначительные неденежные выгоды по-прежнему разрешены даже в этих строгих режимах.</p>
+</div>
+
+<div class="section-card" id="minor">
+  <div class="section-num">10.1.1</div>
+  <h2 class="section-title">Незначительные неденежные выгоды — 4 критерия + 4 категории</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 критерия (все должны выполняться)</div>
+  <ul class="bullet">
+    <li><strong>Чётко раскрыта</strong> до предоставления соответствующей услуги клиенту</li>
+    <li>Способна <strong>повысить качество услуги</strong>, предоставляемой клиенту</li>
+    <li>По масштабу и характеру <strong>не может считаться</strong> нарушающей обязанность фирмы действовать честно, справедливо и профессионально в наилучших интересах клиента</li>
+    <li><strong>Разумная, соразмерная</strong> и по масштабу маловероятно влияющая на поведение фирмы в ущерб клиенту</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 категории разрешённых незначительных неденежных выгод</div>
+  <ul class="bullet">
+    <li><strong>Информация или документация</strong> о финансовом инструменте или инвестиционной услуге — общего характера или персонализированная</li>
+    <li><strong>Письменные материалы от третьей стороны</strong>, заказанные и оплаченные корпоративным эмитентом или потенциальным эмитентом для <strong>продвижения нового выпуска</strong></li>
+    <li><strong>Участие в конференциях, семинарах и иных учебных мероприятиях</strong> о выгодах и характеристиках конкретного финансового инструмента или услуги</li>
+    <li><strong>Гостеприимство разумной de minimis стоимости</strong>, например, еда и напитки во время деловой встречи или конференции/семинара/учебного мероприятия</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Критическое ограничение — de minimis стоимость</div>
+    Гостеприимство квалифицируется только при <strong>разумной de minimis стоимости</strong>. Еда и напитки на деловой встрече — OK. <strong>Билет на Лигу чемпионов, роскошный ужин, поездка на Мальдивы — НЕ квалифицируются</strong> как незначительная неденежная выгода.
+  </div>
+  <div class="example-box">
+    <div class="eb-title">Что квалифицируется и что нет</div>
+    ✓ <strong>Квалифицируется:</strong> исследовательский отчёт о фонде / корпоративное исследование об IPO / посещение семинара фондового дома с обедом / бутерброд и кофе на учебном мероприятии.<br><br>
+    ✗ <strong>Не квалифицируется:</strong> билет на футбол / уик-энд в спа-курорте / дорогая бутылка вина / ужин в ресторане три звезды Мишлен без деловой цели.
+  </div>
+</div>
+
+<div class="section-card" id="three">
+  <div class="section-num">10.1.2</div>
+  <h2 class="section-title">3 категории разрешённых платежей (MiFID-бизнес)</h2>
+  <p class="para">В отношении MiFID-бизнеса фирмам <strong>запрещено</strong> выплачивать или получать любые сборы, комиссии или неденежные выгоды, <strong>кроме трёх категорий</strong>:</p>
+  <ul class="bullet">
+    <li>Сборы, комиссии или неденежные выгоды, выплачиваемые <strong>клиентом или в его пользу</strong> (или кем-то от его имени) — например, management fees</li>
+    <li><strong>Надлежащие сборы, необходимые</strong> для предоставления услуги (например, <strong>custody costs, legal fees, settlement fees</strong>), которые по своей природе <strong>не могут порождать конфликты</strong></li>
+    <li>Сборы, комиссии или неденежные выгоды, выплачиваемые <strong>третьей стороной или в её пользу</strong> — только при выполнении <strong>3 условий</strong></li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> 3 условия для платежей третьих сторон</div>
+  <div class="info-box">
+    <div class="ib-title">Мнемоника: NED</div>
+    <strong>N</strong>ot impair (не нарушать) + <strong>E</strong>nhance (повышать качество) + <strong>D</strong>isclose (раскрыть)<br><br>
+    (1) <strong>НЕ нарушают</strong> соблюдение фирмой обязанности действовать в наилучших интересах клиента<br>
+    (2) <strong>Направлены на повышение качества</strong> услуги клиенту<br>
+    (3) <strong>Раскрыты</strong> клиенту в соответствии с установленными стандартами <strong>до</strong> предоставления услуги
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Как выполнить обязательство о раскрытии</div>
+  <p class="para">Фирма может выполнить обязательство о раскрытии, если: раскрывает <strong>основные условия</strong> таких платежей/выгод в <strong>сводной форме</strong>; <strong>обязуется перед клиентом</strong> предоставить более подробные сведения по запросу; и <strong>фактически предоставляет их</strong> по запросу.</p>
+  <div class="info-box">
+    <div class="ib-title">Ведение документации</div>
+    Фирмы обязаны также вести <strong>полные записи</strong> таких платежей/выгод в отношении других фирм для всего UK MiFID-бизнеса.
+  </div>
+</div>
+
+<div class="section-card" id="nonmifid">
+  <div class="section-num">10.1.3</div>
+  <h2 class="section-title">Non-MiFID фирмы — отдельный режим</h2>
+  <p class="para">Положения об inducements <strong>полностью не реализованы для non-MiFID фирм/бизнеса</strong>. В отношении платежей третьих сторон эти фирмы должны соблюдать только:</p>
+  <table class="comp-table">
+    <tr><th>Тип фирмы</th><th>Применяемые тесты</th></tr>
+    <tr><td>MiFID-фирма</td><td>Все 3 теста: not impair + enhance + disclose</td></tr>
+    <tr><td>Non-MiFID фирма (не retail packaged products)</td><td>Только тест «not impair»</td></tr>
+    <tr><td>Non-MiFID retail для packaged products</td><td>«Not impair» + требования о раскрытии (но не для разумных неденежных выгод)</td></tr>
+  </table>
+</div>
+
+<div class="section-card" id="s102">
+  <div class="section-num">10.2</div>
+  <h2 class="section-title">Inducements и исследования — отдельная оплата</h2>
+  <p class="para">UK-регулируемые фирмы, производящие исследования, обязаны применять <strong>отдельно идентифицируемый сбор за исследование</strong> при предоставлении его организации, которая не вправе получать исследования бесплатно.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Кто НЕ вправе получать исследования бесплатно</div>
+  <p class="para">Регулируемая фирма, которая либо: <strong>предоставляет portfolio management services</strong>, либо <strong>предоставляет independent или restricted advice</strong> retail-клиенту и/или professional client.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 2 разрешённых метода оплаты (для таких фирм)</div>
+  <ul class="bullet">
+    <li>Непосредственно из <strong>собственных ресурсов</strong> (фирма платит сама, не перекладывая затраты на клиентов)</li>
+    <li>Из <strong>Research Payment Account (RPA)</strong> — управляется фирмой и пополняется за счёт специального сбора с клиентов</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> FCA gold-plating — AIFs и CIS</div>
+  <p class="para">FCA не применила требования к: <strong>AIFs</strong>; <strong>CIS, основная инвестиционная политика которых не предполагает инвестирования в MiFID-инструменты</strong>. Это означает: <strong>private equity</strong> (инвестиции в компании) и <strong>фонды, инвестирующие в коммерческую недвижимость</strong> — не охвачены запретом на бесплатное получение исследований.</p>
+  <div class="warn-box">
+    <div class="wb-title">Макроэкономические исследования — подлежат оплате</div>
+    Правила FCA означают, что UK asset managers обязаны <strong>платить за макроэкономические исследования</strong>, поскольку они <strong>не соответствуют определению «FICC» research</strong>. Частое заблуждение: считать макро-исследования «общей информацией», не требующей оплаты. Это НЕ так.
+  </div>
+</div>
+
+<div class="section-card" id="s103">
+  <div class="section-num">10.3</div>
+  <h2 class="section-title">Research Payment Account (RPA) — правила использования</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> Пополнение RPA</div>
+  <p class="para">RPA должен пополняться <strong>ТОЛЬКО за счёт специального сбора за исследование</strong> с клиентов, <strong>согласованного</strong> с клиентами, — исходя из бюджета фирмы на исследования для определения суммы, необходимой для оплаты сторонних исследований.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Только для исследований</div>
+  <p class="para">RPA должен использоваться <strong>только для оплаты исследований</strong> и НЕ для товаров/услуг, не подпадающих под определение исследований.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Что НЕ является исследованием для RPA</div>
+  <ul class="bullet">
+    <li>Пост-трейдовая аналитика</li>
+    <li>Ценовые потоки или исторические данные о ценах, <strong>не проанализированные</strong> для получения значимых выводов</li>
+    <li>Сборы за семинары</li>
+    <li>Услуги corporate access</li>
+    <li>Услуги управления поручениями и исполнением</li>
+    <li>Администрирование RPA</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Отраслевой тренд</div>
+    Ряд fund managers принял решение <strong>платить за исследования из собственных ресурсов</strong>, одновременно сокращая объём получаемых исследований и фокусируясь на релевантных и ценных. Это также означает, что полученные исследования могут использоваться на благо <strong>всех клиентов</strong> фирмы.
+  </div>
+</div>
+
+<div class="section-card" id="s104">
+  <div class="section-num">10.4</div>
+  <h2 class="section-title">Payment Optionality — изменения августа 2024</h2>
+  <p class="para">FCA внесла изменения в существующие правила оплаты инвестиционных исследований. В UK <strong>buy-side фирмы</strong> получили бо́льшую гибкость: <strong>asset managers</strong> / <strong>pension schemes</strong> / <strong>fund managers</strong> (управляющие collective investment schemes).</p>
+  <div class="info-box">
+    <div class="ib-title">Что разрешено с августа 2024</div>
+    Им разрешено <strong>«объединять» (bundle) платежи</strong> за сторонние исследования и услуги по исполнению, при соблюдении соответствующих требований к затратам на исполнение и исследования.
+  </div>
+  <div class="example-box">
+    <div class="eb-title">До и после августа 2024</div>
+    <strong>До августа 2024:</strong> asset manager торгует через брокера X. Брокер берёт комиссию 5 bps за исполнение. <em>Отдельно</em> asset manager получает исследования от брокера X и платит £50К/год через RPA.<br><br>
+    <strong>С августа 2024:</strong> asset manager может снова «объединять» — брокер берёт 7 bps, включая и исполнение, и исследование. Главное — соблюдение требований к затратам.
+  </div>
+  <div class="warn-box">
+    <div class="wb-title">Дата для экзамена</div>
+    <strong>Август 2024</strong> — UK buy-side фирмы могут объединять платежи за исследования и исполнение. Это важное изменение, о котором спрашивают на экзамене.
+  </div>
+</div>
+
+<div class="summary-card" id="sum10">
+  <div class="summary-title">📋 Итоговое резюме — Section 10</div>
+  <ul>
+    <li><strong>Правила inducements = «правило о платежах»</strong> — запрещает любые платежи, кроме прямо разрешённых. Сфера: MiFID + non-MiFID. Применяется к professional + retail. <strong>НЕ к ECP-бизнесу</strong>.</li>
+    <li><strong>Незначительные неденежные выгоды — 4 критерия:</strong> (1) раскрыта до предоставления услуги; (2) способна повысить качество; (3) не нарушает обязанность действовать в наилучших интересах; (4) разумная, соразмерная, маловероятно влияет на поведение. 4 категории: информация/документация / материалы корпоративного эмитента / конференции+семинары / гостеприимство de minimis (еда+напитки на деловых встречах).</li>
+    <li><strong>MiFID — 3 категории разрешённых платежей:</strong> (1) от/в пользу клиента; (2) надлежащие сборы, необходимые для услуги (custody, legal, settlement); (3) платежи третьих сторон — при 3 условиях.</li>
+    <li><strong>3 условия для платежей третьих сторон (NED):</strong> Not impair (не нарушать) + Enhance (повышать качество) + Disclose (раскрыть до предоставления услуги). Раскрытие: сводная форма + готовность предоставить детали по запросу + фактически предоставить. Документация: полные записи для всего UK MiFID-бизнеса.</li>
+    <li><strong>Non-MiFID фирмы:</strong> только тест «not impair». Retail non-MiFID packaged products: «not impair» + раскрытие (но не для разумных неденежных выгод).</li>
+    <li><strong>10.2 Оплата исследований:</strong> фирмы в сфере (portfolio management / independent+restricted advice для retail/professional) платят только через (1) собственные ресурсы ИЛИ (2) RPA, пополняемый специальным сбором с клиентов. Не применяется к: non-UK производителям, non-UK потребителям, AIFs, CIS (не MiFID-инструменты — PE, commercial property). Макроэкономические исследования: <strong>подлежат оплате</strong> (не FICC research).</li>
+    <li><strong>10.3 RPA:</strong> только специальный сбор за исследование, согласованный с клиентами. Только для исследований. НЕ является исследованием: пост-трейдовая аналитика / неаналитические ценовые потоки / семинарские сборы / corporate access / управление поручениями и исполнением / администрирование RPA.</li>
+    <li><strong>10.4 Август 2024:</strong> UK buy-side фирмы (asset managers, pension schemes, fund managers) могут <strong>объединять платежи</strong> за сторонние исследования и услуги по исполнению при соблюдении требований к затратам.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

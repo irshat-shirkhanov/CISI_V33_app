@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 3 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 3 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Client Categorisation · Syllabus 2.3 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Одна из самых содержательных секций главы — и одна из самых важных на экзамене (ожидайте 3–5 вопросов). Регулирует, как фирма обязана «присваивать ярлык» клиентам — <strong>retail</strong>, <strong>professional</strong> или <strong>eligible counterparty (ECP)</strong>. Категория определяет уровень защиты: от максимальной (retail) до минимальной (ECP). Секция очень «числовая» — нужно запомнить многочисленные пороги в евро и фунтах.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#why">Зачем нужна категоризация клиентов</a></li>
+    <li>→ <a href="#s31">3.1 Применение правил категоризации</a></li>
+    <li>→ <a href="#three">3.1.2 Три категории клиентов</a></li>
+    <li>→ <a href="#pro">Per se Professional Clients — подробно</a></li>
+    <li>→ <a href="#ecp">Eligible Counterparties (ECP) — подробно</a></li>
+    <li>→ <a href="#agent">3.2 Агенты — правила «agent as client»</a></li>
+    <li>→ <a href="#recat">3.3 Рекатегоризация</a></li>
+    <li>→ <a href="#local">Местные органы власти — особый режим</a></li>
+    <li>→ <a href="#higher">3.3.1 Рекатегоризация для повышения защиты</a></li>
+    <li>→ <a href="#sum3">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="why">
+  <div class="section-num">Введение</div>
+  <h2 class="section-title">Зачем нужна категоризация клиентов</h2>
+  <p class="para">Ключевая идея UK-регулирования — <strong>защищать тех, кто нуждается в защите</strong>. Обычный пенсионер и нидерландский пенсионный фонд с €100 млрд под управлением нуждаются в принципиально разных уровнях защиты. Поэтому FCA (вслед за MiFID) делит всех клиентов на три категории.</p>
+  <div class="info-box">
+    <div class="ib-title">Три категории — уровни защиты</div>
+    <strong>Retail Client</strong> — максимальная защита: полный COBS, FOS, FSCS, suitability, appropriateness.<br>
+    <strong>Professional Client</strong> — средняя защита: основные правила, меньше защитных требований.<br>
+    <strong>Eligible Counterparty (ECP)</strong> — минимальная защита: многие правила COBS отключены.
+  </div>
+  <div class="warn-box">
+    <div class="wb-title">Ключевой принцип категоризации</div>
+    «Любой клиент является <strong>retail</strong>, если он не соответствует критериям professional investor или ECP». Retail — это <strong>категория по умолчанию</strong>. При сомнении — относиться как к retail.
+  </div>
+</div>
+
+<div class="section-card" id="s31">
+  <div class="section-num">3.1</div>
+  <h2 class="section-title">Применение правил категоризации</h2>
+  <p class="para">Фирма обязана категоризировать клиентов, <strong>если осуществляет designated investment business</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> MiFID vs Non-MiFID — две параллельные системы</div>
+  <p class="para">MiFID заложил правила категоризации для MiFID-бизнеса. Для non-MiFID-бизнеса FCA приняла ту же терминологию, но изменила критерии в ряде мест. Результат — <strong>две параллельные системы с одинаковой терминологией, но разными порогами</strong>.</p>
+  <div class="info-box">
+    <div class="ib-title">Правило для смешанного бизнеса</div>
+    Если фирма предоставляет <strong>и MiFID, и non-MiFID</strong> услуги одному клиенту — она должна использовать <strong>MiFID-категоризацию</strong>, если только MiFID-бизнес не ведётся <em>отдельно</em>.
+  </div>
+</div>
+
+<div class="section-card" id="three">
+  <div class="section-num">3.1.2</div>
+  <h2 class="section-title">Три категории клиентов — обзор</h2>
+  <table class="comp-table">
+    <tr><th>Категория</th><th>Уровень защиты</th><th>Типичные примеры</th></tr>
+    <tr><td><strong>Retail Client</strong></td><td>Максимальный</td><td>Физическое лицо, малый бизнес, любой, кто не professional и не ECP</td></tr>
+    <tr><td><strong>Professional Client</strong> (per se или elective)</td><td>Средний</td><td>Банки, инвестиционные фирмы, пенсионные фонды, крупные компании</td></tr>
+    <tr><td><strong>Eligible Counterparty (ECP)</strong> (per se или elective)</td><td>Минимальный</td><td>Банки, центробанки, правительства, регулируемые институциональные игроки (НО не крупные undertakings)</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">Per se vs Elective</div>
+    <strong>Per se</strong> = «по определению», автоматически (например, банк — уже professional только потому, что он банк).<br>
+    <strong>Elective</strong> = «по выбору», когда клиент <em>просит</em> о более низком уровне защиты и проходит необходимые тесты.
+  </div>
+</div>
+
+<div class="section-card" id="pro">
+  <div class="section-num">3.1.2 pt. 2</div>
+  <h2 class="section-title">Per se Professional Clients — подробно</h2>
+  <p class="para">Клиенты, являющиеся professional «по определению», без необходимости что-либо доказывать.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Группа 1: Регулируемые финансовые институты</div>
+  <p class="para">Кредитные институты (банки) / инвестиционные фирмы / другие авторизованные/регулируемые финансовые институты / страховые компании / CIS и управляющие компании CIS / пенсионные фонды и их управляющие / торговцы сырьевыми товарами и деривативами на них / другие institutional investors.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Группа 2: Large Undertakings — ключевая тема экзамена</div>
+  <p class="para">Компании, достаточно крупные и опытные, чтобы считаться professional, не будучи финансовым институтом. Правила отличаются для MiFID и non-MiFID:</p>
+  <table class="comp-table">
+    <tr><th>MiFID-бизнес</th><th>Non-MiFID-бизнес</th></tr>
+    <tr><td>Соответствует <strong>любым 2 из 3</strong>:<br>• Баланс ≥ <strong>€20M</strong><br>• Чистая выручка ≥ <strong>€40M</strong><br>• Собственные средства ≥ <strong>€2M</strong></td><td>Альтернативные тесты (любой один):<br><strong>Вариант A:</strong> Оплаченный акционерный капитал или чистые активы ≥ <strong>£5M</strong> (сейчас или за последние 2 года)<br><strong>Вариант B (2 из 3):</strong> Баланс ≥ €12,5M / Выручка ≥ €25M / <strong>250 сотрудников</strong></td></tr>
+  </table>
+  <div class="warn-box">
+    <div class="wb-title">Не перепутайте числа!</div>
+    MiFID: <strong>€20M / €40M / €2M</strong> (в евро, любые 2 из 3).<br>
+    Non-MiFID вариант 1: <strong>£5M</strong> акционерный капитал/чистые активы (в фунтах).<br>
+    Non-MiFID вариант 2: <strong>€12,5M / €25M / 250 сотрудников</strong>.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Специальные случаи для Non-MiFID</div>
+  <ul class="bullet">
+    <li><strong>Партнёрство / некорпоративная ассоциация:</strong> чистые активы ≥ £5M (сейчас или за последние 2 года)</li>
+    <li><strong>Доверительный управляющий траста (non-pension):</strong> активы ≥ £10M (сейчас или за последние 2 года)</li>
+    <li><strong>Доверительный управляющий пенсионного траста:</strong> ≥ <strong>50 участников</strong> И активы под управлением ≥ <strong>£10M</strong> (оба условия одновременно)</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Пенсионный траст — ОБА условия обязательны</div>
+    50 участников + £10M активов. Не «или» — «И». Траст с 60 участниками и £5M — НЕ per se professional. Траст с 40 участниками и £20M — тоже НЕ.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Группы 3 и 4</div>
+  <ul class="bullet">
+    <li><strong>Группа 3:</strong> Национальные/региональные правительства, отдельные государственные органы, центробанки, международные/наднациональные институты (Всемирный банк, ЕЦБ, МВФ и др.)</li>
+    <li><strong>Группа 4:</strong> Институциональные инвесторы, чья основная деятельность — инвестирование в финансовые инструменты</li>
+  </ul>
+</div>
+
+<div class="section-card" id="ecp">
+  <div class="section-num">3.1.2 pt. 3</div>
+  <h2 class="section-title">Eligible Counterparties (ECP) — подробно</h2>
+  <div class="warn-box">
+    <div class="wb-title">КЛЮЧЕВОЕ РАЗЛИЧИЕ: ECP vs Per se Professional</div>
+    <strong>ECP = per se professional МИНУС large undertakings.</strong><br>
+    Крупная компания, прошедшая тесты для per se professional, <strong>НЕ становится автоматически ECP</strong>. Она остаётся professional. Любимый вопрос экзамена.
+  </div>
+  <p class="para">Полный перечень per se ECP: кредитные институты / инвестиционные фирмы / другие финансовые институты (банки, страхование, ценные бумаги) / страховые компании / UCITS CIS или его управляющая компания / пенсионные фонды / национальные правительства (включая органы управления госдолгом) / наднациональные организации / центробанки.</p>
+  <div class="info-box">
+    <div class="ib-title">Статус ECP применяется только к конкретным услугам</div>
+    ECP-статус действует лишь при: dealing on own account / execution of orders / reception and transmission of orders / ancillary services / arranging (non-MiFID).<br>
+    Если ECP хочет получить <strong>investment advice</strong> или <strong>portfolio management</strong> — его следует классифицировать <strong>как per se professional</strong> для этих услуг.
+  </div>
+</div>
+
+<div class="section-card" id="agent">
+  <div class="section-num">3.2</div>
+  <h2 class="section-title">Агенты — правила «agent as client»</h2>
+  <p class="para">Что происходит, если лицо A обращается к фирме, но действует как агент лица B? Кто клиент фирмы — A или B?</p>
+  <div class="info-box">
+    <div class="ib-title">Правило по умолчанию</div>
+    Если фирма знает, что A действует как агент B — <strong>A считается клиентом фирмы</strong> (агент).<br>
+    <strong>Исключения (B становится клиентом):</strong><br>
+    ① Фирма и A <strong>письменно договорились</strong> считать B клиентом.<br>
+    ② Участие A <strong>главным образом направлено</strong> на снижение обязанностей фирмы перед B.
+  </div>
+</div>
+
+<div class="section-card" id="recat">
+  <div class="section-num">3.3</div>
+  <h2 class="section-title">Рекатегоризация — переход между категориями</h2>
+  <p class="para"><strong>Elective Professional (MiFID):</strong> Клиент-retail проходит <strong>качественный тест</strong> (адекватная оценка экспертизы/опыта) + <strong>количественный тест</strong> (любые 2 из 3):</p>
+  <table class="comp-table">
+    <tr><th>Критерий</th><th>Порог</th></tr>
+    <tr><td>Частота сделок</td><td>≥ <strong>10 сделок в квартал</strong> в среднем за последние 4 квартала</td></tr>
+    <tr><td>Размер портфеля</td><td>> <strong>€500 000</strong></td></tr>
+    <tr><td>Профессиональный опыт</td><td>≥ <strong>1 год</strong> в финансовом секторе в профессиональной роли</td></tr>
+  </table>
+  <p class="para"><strong>Non-MiFID elective professional:</strong> Только качественный тест — без количественного.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Письменная процедура — три шага</div>
+  <ul class="bullet">
+    <li>Клиент <strong>пишет фирме</strong>: просьба о рекатегоризации, указание услуг/продуктов</li>
+    <li>Фирма отвечает <strong>письменным предупреждением</strong>: чётко указывает, какую защиту клиент потеряет</li>
+    <li>Клиент подтверждает в <strong>отдельном письменном документе</strong>: понимание последствий потери защиты</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Что теряет retail-клиент, становясь elective professional</div>
+    Правила коммуникаций / информация о фирме и услугах / suitability / appropriateness / лучшее исполнение (ограниченно) / отчётность клиентам / вознаграждение персонала / <strong>FOS и FSCS</strong> (критически важно) / ограничения ответственности / Share Trading Obligation.
+  </div>
+</div>
+
+<div class="section-card" id="local">
+  <div class="section-num">3.3 pt. 2</div>
+  <h2 class="section-title">Местные органы власти — особый режим post-MiFID II</h2>
+  <div class="warn-box">
+    <div class="wb-title">Местные органы власти — RETAIL по умолчанию</div>
+    MiFID II ввёл дополнительную защиту для местных органов власти и муниципалитетов (историческая причина — крупные потери на сложных деривативах). Ранее они могли быть professional. Теперь — <strong>только retail</strong>. Могут перейти в elective professional, но с <strong>повышенными порогами</strong>.
+  </div>
+  <table class="comp-table">
+    <tr><th></th><th>Обычный retail (MiFID)</th><th>Местный орган власти (MiFID)</th></tr>
+    <tr><td>Размер портфеля</td><td>> <strong>€500 000</strong></td><td>> <strong>£10 000 000</strong> (в фунтах!)</td></tr>
+    <tr><td>Дополнительные критерии</td><td>Любые <strong>2 из 3</strong></td><td>Любой <strong>1 из 3</strong>: (a) ≥10 сделок/квартал за 4 квартала; (b) уполномоченное лицо ≥1 года в финансовом секторе; (c) орган является <strong>administering authority LGPS</strong></td></tr>
+  </table>
+  <div class="exam-box">
+    <div class="xb-title">Не путайте пороги</div>
+    Обычный retail: <strong>€500K</strong> и 2 из 3.<br>
+    Местный орган власти: <strong>£10M</strong> (!) и 1 из 3 (включая специальный маршрут через LGPS).<br>
+    Порог для местных органов — в <strong>фунтах</strong> и более чем в 20 раз выше по стоимости.
+  </div>
+</div>
+
+<div class="section-card" id="higher">
+  <div class="section-num">3.3.1</div>
+  <h2 class="section-title">Рекатегоризация для повышения защиты</h2>
+  <p class="para">Другое направление: professional хочет стать retail, или ECP хочет стать professional/retail. Это <strong>увеличение защиты</strong>, поэтому процедура проще.</p>
+  <ul class="bullet">
+    <li><strong>Professional clients</strong> могут просить об обращении как с <strong>retail</strong></li>
+    <li><strong>ECPs</strong> могут просить об обращении как с <strong>professional или retail</strong></li>
+    <li>Фирма может <strong>по собственной инициативе</strong> относиться к per se professional как к retail и к per se ECP как к professional/retail</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> Уведомления и ведение документации</div>
+  <p class="para">Новые клиенты должны быть уведомлены о категоризации <strong>ДО предоставления услуг</strong>. Фирма также сообщает: право клиента запросить иную категоризацию + ограничения защиты при текущей категории. Фирма должна иметь <strong>письменные внутренние политики</strong> категоризации и вести записи всех уведомлений.</p>
+</div>
+
+<div class="summary-card" id="sum3">
+  <div class="summary-title">📋 Итоговое резюме — Section 3</div>
+  <ul>
+    <li><strong>Ключевые числа:</strong> MiFID large undertaking: €20M / €40M / €2M (2 из 3). Non-MiFID: £5M (акц. капитал/чистые активы). Non-MiFID alt (2 из 3): €12,5M / €25M / 250 сотрудников. Траст (non-pension): £10M. Пенсионный траст: 50 участников + £10M. Elective professional (MiFID): 10 сделок / €500K / 1 год (2 из 3). Местный орган: £10M + 1 из 3 (включая LGPS).</li>
+    <li><strong>3 категории:</strong> Retail (макс. защита) / Professional (per se или elective, средняя) / ECP (per se или elective, мин.).</li>
+    <li><strong>Retail = категория по умолчанию.</strong> Любой клиент является retail, если не является professional или ECP.</li>
+    <li><strong>«Customer»</strong> (FCA Handbook) = retail + professional. ECP НЕ включены в «customer».</li>
+    <li><strong>Per se professional:</strong> регулируемые финансовые институты + large undertakings (по тестам) + правительства/центробанки + institutional investors.</li>
+    <li><strong>ECP = per se professional МИНУС large undertakings.</strong> ECP-статус только для: dealing own account + execution + reception/transmission + ancillary + arranging (non-MiFID). Для advice и portfolio management → per se professional.</li>
+    <li><strong>Conflicts of interest (SYSC 10) применяются всегда — даже для ECP.</strong></li>
+    <li><strong>Агенты (3.2):</strong> по умолчанию агент = клиент. Исключения: письменное соглашение + anti-avoidance rule.</li>
+    <li><strong>Elective professional (MiFID):</strong> качественный + количественный тесты (2 из 3). Non-MiFID: только качественный. Процедура = 3 письменных шага: (1) запрос клиента, (2) предупреждение фирмы, (3) отдельное письменное подтверждение клиента.</li>
+    <li><strong>Местные органы власти post-MiFID II:</strong> retail по умолчанию. Elective professional только при £10M + 1 из 3 (включая администрирующий орган LGPS).</li>
+    <li><strong>Повышение защиты:</strong> более простая процедура, фирма может инициировать сама. Может быть на общей основе или для конкретной сделки. Новые клиенты уведомляются ДО предоставления услуг.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 1, Section 3 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 1</div>
+  <div class="app-title">Chapter 1, Section 3 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Fitness and Propriety · SM&CR · FIT · Syllabus 1.3 + 1.7.4 · CISI V33</div>
+</div>
+
+<div class="screen">
+
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">
+    Section 3 — это <strong>личная ответственность сотрудников финансовой отрасли</strong>. После кризиса 2008 года (и скандала с манипуляцией LIBOR в 2012 году) стало очевидно: штрафовать только фирмы недостаточно — если банк теряет миллиарды, конкретные <em>люди</em> принимали эти решения. В ответ был создан <strong>Senior Managers and Certification Regime (SM&CR)</strong> — режим из трёх компонентов, который (1) обязывает регулятора <strong>лично утверждать</strong> старших менеджеров, (2) требует от фирм <strong>ежегодно сертифицировать</strong> других сотрудников, несущих риск, и (3) устанавливает <strong>Conduct Rules</strong> для всех. Плюс <strong>Fit and Proper Test (FIT)</strong> — три критерия, по которым регулятор/фирма оценивают физическое лицо. На экзамене 2–3 вопроса — одна из наиболее часто проверяемых тем.
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s31">3.1 Предыстория — почему появился SM&CR</a></li>
+    <li>→ <a href="#scope-smcr">Сфера применения SM&CR</a></li>
+    <li>→ <a href="#three-types">3 типа solo-regulated firms</a></li>
+    <li>→ <a href="#s32">3.2 Senior Managers Regime (SMR)</a></li>
+    <li>→ <a href="#smfs">SMFs — Senior Management Functions</a></li>
+    <li>→ <a href="#forma">Form A + 90-дневный срок + regulatory reference</a></li>
+    <li>→ <a href="#prs">Prescribed Responsibilities + Management Responsibilities Map</a></li>
+    <li>→ <a href="#s33">3.3 Certification Regime (CR)</a></li>
+    <li>→ <a href="#s34">3.4 Conduct Rules — 5 индивидуальных + 4 для SM</a></li>
+    <li>→ <a href="#s35">3.5 Fit and Proper Test (FIT) — 3 критерия</a></li>
+    <li>→ <a href="#sum3">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<!-- 3.1 Background -->
+<div class="section-card" id="s31">
+  <div class="section-num">3.1</div>
+  <h2 class="section-title">Предыстория — почему появился SM&CR</h2>
+
+  <p class="para">В ответ на <strong>банковский кризис 2007–08 годов</strong> и значительные нарушения в поведении (в частности, <strong>манипуляцию LIBOR</strong> в 2012 году) Правительство Великобритании учредило <strong>Parliamentary Commission for Banking Standards (PCBS)</strong> с целью выработки рекомендаций по повышению стандартов в банковском секторе.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Рекомендации PCBS</div>
+  <p class="para">PCBS рекомендовал:</p>
+  <ul class="bullet">
+    <li>Новую <strong>систему подотчётности</strong>, ориентированную прежде всего на ответственность старшего руководства</li>
+    <li>Чтобы фирмы <strong>несли большую ответственность</strong> за надлежащую квалификацию своих сотрудников</li>
+    <li><strong>Более высокие стандарты поведения</strong> на всех уровнях банковских фирм</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Внедрение — 2016 и 2018–2019</div>
+  <table class="comp-table">
+    <tr><th>Дата</th><th>Событие</th></tr>
+    <tr><td>2016</td><td>Парламент принял законодательство → FCA и PRA <strong>ввели SM&CR в банковском секторе</strong></td></tr>
+    <tr><td>2016</td><td>Парламент внёс дополнительные изменения — обязав регуляторов <strong>распространить SM&CR на все FSMA-авторизованные фирмы</strong></td></tr>
+    <tr><td>2018</td><td>Распространение на страховщиков</td></tr>
+    <tr><td>2019</td><td>Распространение на solo-regulated firms (управляющих активами, брокеров, IFA)</td></tr>
+  </table>
+
+  <div class="info-box">
+    <div class="ib-title">Исторический контекст</div>
+    Прежний режим — <strong>Approved Persons Regime (APER)</strong> — насчитывал <strong>~30 000</strong> утверждённых лиц (Significant Influence Functions, SIF). После кризиса стало очевидно: слишком много, слишком размыто, и регулятор <em>реально</em> не мог оценить надлежащую квалификацию каждого. Новый SM&CR: <strong>меньше лиц, утверждаемых регулятором</strong> (только SMF) + <strong>фирмы сами сертифицируют остальных</strong>. Смещение ответственности: от регулятора к фирме.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Три компонента SM&CR</div>
+  <ul class="bullet">
+    <li><strong>Senior Managers Regime (SMR)</strong> — регуляторное утверждение для старших лиц</li>
+    <li><strong>Certification Regime (CR)</strong> — фирмы сертифицируют других сотрудников, несущих риск, как fit and proper</li>
+    <li><strong>Conduct Rules</strong> — поведенческие стандарты для всех соответствующих сотрудников</li>
+  </ul>
+</div>
+
+<!-- Scope -->
+<div class="section-card" id="scope-smcr">
+  <div class="section-num">3.1.1</div>
+  <h2 class="section-title">Сфера применения SM&CR — на кого распространяется</h2>
+
+  <p class="para">SM&CR применяется ко <strong>всем FSMA-авторизованным фирмам</strong>, <strong>ЗА ИСКЛЮЧЕНИЕМ</strong>:</p>
+  <ul class="bullet">
+    <li><strong>Appointed Representatives (ARs)</strong> — они действуют под ответственность фирмы-принципала; принципал применяет SM&CR к своей собственной деятельности</li>
+    <li><strong>Benchmark Administrators</strong> — регулируются в рамках отдельной системы (Benchmarks Regulation)</li>
+  </ul>
+
+  <div class="warn-box">
+    <div class="wb-title">Только 2 категории исключены</div>
+    Частая ловушка на экзамене: «исключены ли solo-regulated firms?» — <strong>НЕТ</strong>. Solo-regulated firms <strong>входят</strong> в сферу действия по пропорциональному режиму. Страховщики — <strong>входят</strong>. Банки — <strong>входят</strong> с 2016 года. Исключены <strong>только ARs и Benchmark Administrators</strong>.
+  </div>
+</div>
+
+<!-- Three types -->
+<div class="section-card" id="three-types">
+  <div class="section-num">3.1.2</div>
+  <h2 class="section-title">3 типа solo-regulated firms — пропорциональный подход</h2>
+
+  <p class="para">При распространении SM&CR на <strong>solo-regulated firms</strong> FCA применила <strong>пропорциональный подход</strong>, введя 3 типа фирм с разными уровнями требований:</p>
+
+  <table class="comp-table">
+    <tr><th>Тип</th><th>Кто входит</th><th>Требования</th></tr>
+    <tr><td><strong>Limited scope (Ограниченная сфера)</strong></td><td>Индивидуальные предприниматели без сотрудников, фирмы с ограниченным разрешением по потребительскому кредиту, участники рынков нефти/энергии, авторизованные профессиональные фирмы (только не основная деятельность)</td><td>Уменьшенный объём требований</td></tr>
+    <tr><td><strong>Core scope (Основная сфера)</strong></td><td>Большинство фирм (подавляющее большинство)</td><td>Базовые требования SM&CR</td></tr>
+    <tr><td><strong>Enhanced scope (Расширенная сфера)</strong></td><td>Более крупные solo-regulated firms (по AUM, выручке и т.д.)</td><td>Существенно большие требования</td></tr>
+  </table>
+
+  <div class="example-box">
+    <div class="eb-title">Примеры классификации</div>
+    <strong>Индивидуальный предприниматель-IFA</strong> (консультант, без персонала) — Limited Scope.<br>
+    <strong>Небольшой wealth manager</strong> (50 сотрудников, £200M AUM) — Core.<br>
+    <strong>Крупный управляющий активами</strong> (£10 млрд AUM, 500+ сотрудников) — Enhanced.<br>
+    <strong>Крупный брокер</strong> (500+ сотрудников) — Core или Enhanced.
+  </div>
+
+  <div class="info-box">
+    <div class="ib-title">Бремя доказывания</div>
+    Старшие менеджеры по-прежнему обязаны <strong>предотвращать регуляторные нарушения</strong>, но старший менеджер будет признан виновным в проступке только в том случае, если FCA <strong>сможет доказать</strong>, что он <strong>не предпринял разумных мер</strong> для предотвращения нарушения. Бремя доказывания лежит на FCA, однако старшие менеджеры должны быть готовы <strong>предоставить доказательства</strong> предпринятых разумных мер при выявлении нарушения.
+  </div>
+
+  <div class="warn-box">
+    <div class="wb-title">«Duty of responsibility» — заменил «reverse burden»</div>
+    В первоначальном SM&CR (проект 2015 года) существовало <strong>«обратное бремя доказывания»</strong>: старший менеджер считался виновным по умолчанию и должен был доказать принятие разумных мер. В 2016 году это было заменено на <strong>«duty of responsibility»</strong> — бремя доказывания лежит на FCA. Более благоприятно для обвиняемого.
+  </div>
+</div>
+
+<!-- 3.2 SMR -->
+<div class="section-card" id="s32">
+  <div class="section-num">3.2</div>
+  <h2 class="section-title">Senior Managers Regime (SMR)</h2>
+
+  <p class="para">SMR охватывает <strong>определённых лиц, выполняющих установленные Senior Management Functions (SMF)</strong>.</p>
+
+  <div class="sub-title" id="smfs"><span class="sub-num">3.2.1</span> SMFs — Senior Management Functions</div>
+  <p class="para">SMF, как правило, включают членов <strong>команды старшего руководства</strong> фирмы:</p>
+  <ul class="bullet">
+    <li>Chief Executive Officer — CEO (SMF1)</li>
+    <li>Chief Finance Officer — CFO (SMF2)</li>
+    <li>Executive Director — Исполнительный директор (SMF3)</li>
+    <li>Chief Risk Officer — CRO (SMF4)</li>
+    <li>Head of Internal Audit — Руководитель внутреннего аудита (SMF5)</li>
+    <li>Chair — Председатель (SMF9)</li>
+    <li>Compliance Oversight — Надзор за соответствием (SMF16) — функция FCA</li>
+    <li>Money Laundering Reporting Officer / MLRO (SMF17) — функция FCA</li>
+    <li>Other Overall Responsibility — Иная общая ответственность (SMF18) — только для Enhanced-фирм</li>
+    <li>Partner — Партнёр (SMF27)</li>
+  </ul>
+  <p class="para">В целом — лица, которые <strong>управляют направлением и реализуют стратегию</strong> фирмы. Плюс другие лица, которые могут не выполнять функции исполнительного уровня (руководитель комплаенса, MLRO, руководитель внутреннего аудита).</p>
+
+  <div class="info-box">
+    <div class="ib-title">Разделение SMF между PRA и FCA</div>
+    <strong>PRA контролирует SMF 1–14</strong> для банков (исполнительные + NED-функции).<br>
+    <strong>FCA контролирует:</strong> SMF16 (Compliance Oversight), SMF17 (MLRO), SMF18 (Other Overall Responsibility — Enhanced).
+  </div>
+
+  <div class="info-box">
+    <div class="ib-title">Chair и NED также входят в сферу действия</div>
+    В соответствии с подходом PRA в Supervisory Statement 28/15, лица, выполняющие SMF, <strong>включают Chair и независимых директоров (NED)</strong>. Они могут быть <strong>прямо привлечены к ответственности за решения совета директоров</strong> и потенциально признаны виновными в неверных решениях наравне с исполнительными директорами. Лица, утверждённые для выполнения SMF, должны <strong>демонстрировать глубокое понимание</strong> ключевых направлений деятельности и стратегических активностей организаций, за которые они отвечают, а также связанных с ними рисков.
+  </div>
+</div>
+
+<!-- Form A -->
+<div class="section-card" id="forma">
+  <div class="section-num">3.2.2</div>
+  <h2 class="section-title">Form A + 90-дневный срок + Regulatory Reference</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Предварительное утверждение — обязательно</div>
+  <p class="para">Лицо может <strong>приступить к выполнению SMF только после того</strong>, как регулятор предоставил статус <strong>approved person</strong>. Кандидат заполняет <strong>Form A</strong>, который подаётся регулятору <strong>фирмой</strong>.</p>
+  <p class="para">Form A включает обширный перечень вопросов, устанавливающих: историю занятости лица и его надлежащую квалификацию. В отдельных случаях может быть заполнена <strong>сокращённая форма</strong> — например, если лицо <strong>уже утверждено</strong> для выполнения аналогичной функции.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Regulatory Reference — 6 лет</div>
+  <div class="info-box">
+    <div class="ib-title">Требование о Regulatory Reference</div>
+    До подачи Form A регулятору фирма обязана в рамках SM&CR <strong>предпринять все разумные меры для получения regulatory reference</strong>: от <strong>текущего работодателя</strong> кандидата и от <strong>всех предыдущих работодателей</strong> за <strong>последние 6 лет</strong>.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Statement of Responsibilities (Заявление об ответственности)</div>
+  <p class="para">В рамках процесса подачи заявки фирмы обязаны включить <strong>statement of responsibilities</strong>, описывающее аспекты деятельности фирмы, за которые лицо будет отвечать при выполнении функции. Регуляторы ожидают, что <strong>каждая ответственность закреплена за одним старшим менеджером</strong>. Если ответственность разделена между несколькими старшими менеджерами, ожидается, что <strong>разграничение ответственности и подотчётности чётко прописано</strong>.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> 90-дневный законодательный срок</div>
+  <div class="number-card">90 дней — законодательный срок принятия решения</div>
+  <p class="para" style="margin-top:.6rem">FSMA устанавливает для FCA и PRA законодательное обязательство <strong>вынести решение о надлежащей квалификации лица в течение 90 дней</strong> с момента получения Form A. Фактическое время варьируется в зависимости от дополнительных проверок. Если регуляторы сочтут необходимым запросить <strong>дополнительную информацию</strong> у фирмы, они <strong>приостанавливают законодательный «таймер»</strong> до получения запрошенных данных.</p>
+</div>
+
+<!-- Prescribed Responsibilities -->
+<div class="section-card" id="prs">
+  <div class="section-num">3.2.3</div>
+  <h2 class="section-title">Prescribed Responsibilities + Management Responsibilities Map</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Prescribed Responsibilities (PR)</div>
+  <p class="para"><strong>Prescribed Responsibilities</strong> должны быть закреплены за <strong>наиболее старшими из лиц, выполняющих SMF</strong>. Ключевые обязанности охватываемых лиц фиксируются в <em>statement of responsibilities</em> и отражают роли наиболее старших руководителей через:</p>
+  <ul class="bullet">
+    <li>Повседневное управление</li>
+    <li>Расширение масштаба и подотчётности текущих ролей</li>
+    <li>Механизмы контроля и информирования</li>
+  </ul>
+  <p class="para">Примеры Prescribed Responsibilities:</p>
+  <ul class="bullet">
+    <li>Ответственность за выполнение фирмой обязательств в рамках SMR</li>
+    <li>Ответственность за выполнение фирмой обязательств в рамках Certification Regime</li>
+    <li>Ответственность за финансовые преступления / AML</li>
+    <li>Ответственность за внедрение Consumer Duty</li>
+    <li>Ответственность за соблюдение правил CASS</li>
+  </ul>
+  <p class="para">Каждый PR должен быть закреплён за <strong>одним конкретным SMF</strong>.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Management Responsibilities Map</div>
+  <p class="para"><strong>Management Responsibilities Map</strong> документирует систему управления и корпоративного управления фирмы — <strong>включая то, как распределены prescribed responsibilities</strong>. Назначение:</p>
+  <ul class="bullet">
+    <li>Усиленная <strong>прозрачность</strong> индивидуальной подотчётности</li>
+    <li>Повышение <strong>качества отчётности и иерархии подотчётности</strong></li>
+    <li>Определение требований к <strong>управленческой информации</strong></li>
+  </ul>
+  <p class="para">Для <strong>Core-фирм</strong> — упрощённая версия. Для <strong>Enhanced-фирм</strong> — полная, обязательная.</p>
+</div>
+
+<!-- 3.3 Certification -->
+<div class="section-card" id="s33">
+  <div class="section-num">3.3</div>
+  <h2 class="section-title">Certification Regime (CR)</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Фирма сертифицирует — не регулятор</div>
+  <div class="info-box">
+    <div class="ib-title">Ключевое различие: SMR vs Certification</div>
+    <strong>SMR:</strong> лица <strong>утверждаются регулятором</strong> (Form A → 90 дней → утверждение).<br>
+    <strong>CR:</strong> лица <strong>НЕ утверждаются регуляторами</strong> — вместо этого <strong>фирмы самостоятельно оценивают</strong> их надлежащую квалификацию и ежегодно выдают сертификат. Это возлагает <strong>административное и доказательственное бремя на фирмы</strong>, а не на регуляторов.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Периодичность — при найме + ежегодно</div>
+  <p class="para">CR требует от фирм оценивать надлежащую квалификацию определённых сотрудников:</p>
+  <ul class="bullet">
+    <li>На стадии <strong>найма</strong></li>
+    <li><strong>Ежегодно</strong> после этого</li>
+  </ul>
+  <p class="para"><strong>Старшее руководство фирмы обязано ежегодно подтверждать</strong>, что лица, охватываемые Certification Regime, <strong>по-прежнему являются fit and proper</strong>, через механизмы, разработанные и управляемые самой фирмой.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Кто входит в сферу — «significant harm functions»</div>
+  <p class="para">CR охватывает сотрудников, которые <strong>могут причинить значительный ущерб</strong> фирме или её клиентам. Подходы PRA и FCA различаются:</p>
+  <table class="comp-table">
+    <tr><th>Регулятор</th><th>Подход</th></tr>
+    <tr><td><strong>PRA</strong></td><td>Ограничивает сферу <strong>«material risk takers» (MRTs)</strong>, определёнными в Capital Requirements Regulation (CRR) — т.е. лицами, подпадающими под <strong>Remuneration Code</strong> («Code staff»)</td></tr>
+    <tr><td><strong>FCA</strong></td><td>Более широкий подход — включает лиц, выполняющих функцию из Великобритании или работающих с британскими клиентами</td></tr>
+  </table>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Примеры Significant Harm Functions</div>
+  <p class="para">Подход FCA включает лиц, которые:</p>
+  <ul class="bullet">
+    <li>Ранее выполняли <strong>significant influence function (SIF)</strong> в рамках APER, но теперь находятся вне SMR (не SMF) — например: CASS oversight officer, benchmark submitter или administrator, proprietary trader, бывшие holders CF29</li>
+    <li><strong>Material risk takers</strong> (Code staff)</li>
+    <li>Функции, <strong>требующие квалификации</strong> (инвестиционные советники)</li>
+    <li><strong>Менеджеры сотрудников по сертификации</strong></li>
+    <li><strong>Client-dealing functions</strong> (некоторые)</li>
+  </ul>
+
+  <div class="info-box">
+    <div class="ib-title">«Code staff»</div>
+    Термин <strong>«code staff»</strong> обозначает сотрудников, деятельность которых оказывает <strong>существенное влияние на профиль риска фирмы</strong>. Это сотрудники, подпадающие под Remuneration Code (CRR): правила об отсрочке бонусов, clawback, пропорциональное ограничение бонусов.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Требование о связи с Великобританией (UK nexus)</div>
+  <p class="para">Если лицо <strong>находится за рубежом</strong> и <strong>не работает с британскими клиентами</strong>, выполняя функцию по Certification (кроме MRT), оно <strong>не будет являться certified person</strong>.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Отказ в сертификации</div>
+  <div class="warn-box">
+    <div class="wb-title">Что делать, если лицо не является fit and proper</div>
+    Если сертификат <strong>не выдан</strong> по причине несоответствия лица критериям надлежащей квалификации, фирма обязана: направить <strong>письменное уведомление</strong> с указанием того, какие меры (если таковые имеются) она намерена предпринять, и <strong>уведомить FCA</strong> об обстоятельствах. Увольнение не является автоматическим — фирма должна предпринять активные действия.
+  </div>
+</div>
+
+<!-- 3.4 Conduct Rules -->
+<div class="section-card" id="s34">
+  <div class="section-num">3.4</div>
+  <h2 class="section-title">Conduct Rules — 5 индивидуальных + 4 для Senior Managers</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Общая структура</div>
+  <p class="para">Conduct Rules — это <strong>система поведенческих стандартов</strong>, по которым оценивается поведение физических лиц. Применяется ко <strong>всем лицам, ЗА ИСКЛЮЧЕНИЕМ вспомогательного персонала</strong> (уборщики, персонал кейтеринга). О нарушениях + любых формальных дисциплинарных мерах регулятор <strong>должен быть уведомлён</strong>.</p>
+
+  <div class="schema">
+    <div class="schema-title">Структура Conduct Rules</div>
+INDIVIDUAL CONDUCT RULES
+(все соответствующие сотрудники)
+5 правил (или 6, если применяется Consumer Duty)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SENIOR MANAGER CONDUCT RULES
++4 дополнительных правила (SC1–SC4) ТОЛЬКО для Senior Managers
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Individual Conduct Rules (все соответствующие сотрудники)</div>
+  <table class="comp-table">
+    <tr><th>Правило</th><th>Содержание</th></tr>
+    <tr><td><strong>Rule 1</strong></td><td>Вы должны действовать <strong>с честностью (integrity)</strong></td></tr>
+    <tr><td><strong>Rule 2</strong></td><td>Вы должны действовать с <strong>должной квалификацией, тщательностью и усердием</strong></td></tr>
+    <tr><td><strong>Rule 3</strong></td><td>Вы должны быть <strong>открыты и конструктивны</strong> в отношении FCA, PRA и других регуляторов</td></tr>
+    <tr><td><strong>Rule 4</strong></td><td>Вы должны <strong>должным образом учитывать интересы клиентов и обращаться с ними справедливо</strong></td></tr>
+    <tr><td><strong>Rule 5</strong></td><td>Вы должны <strong>соблюдать надлежащие стандарты поведения на рынке</strong></td></tr>
+    <tr><td><strong>Rule 6</strong></td><td>Вы должны <strong>действовать так, чтобы обеспечивать хорошие исходы для розничных клиентов</strong> (новое правило в рамках Consumer Duty — только для FCA-фирм)</td></tr>
+  </table>
+
+  <div class="info-box">
+    <div class="ib-title">Rule 4 vs Rule 6 — взаимоисключающие</div>
+    После внедрения Consumer Duty <strong>Rule 6 применяется</strong> к лицам, работающим в фирме, подпадающей под Consumer Duty. В этом случае <strong>Rule 4 перестаёт применяться</strong> (без пересечения). Rule 6 <strong>НЕ применяется</strong> к фирмам <strong>вне сферы</strong> Consumer Duty — там продолжает действовать <strong>Rule 4</strong>.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Senior Manager Conduct Rules (дополнительные для SMF)</div>
+  <table class="comp-table">
+    <tr><th>Правило</th><th>Содержание</th></tr>
+    <tr><td><strong>SC1</strong></td><td>Вы должны предпринимать разумные меры для обеспечения <strong>эффективного контроля</strong> деятельности фирмы, за которую вы отвечаете</td></tr>
+    <tr><td><strong>SC2</strong></td><td>Вы должны предпринимать разумные меры для обеспечения <strong>соблюдения применимых требований и стандартов</strong> регуляторной системы</td></tr>
+    <tr><td><strong>SC3</strong></td><td>Вы должны предпринимать разумные меры для того, чтобы <strong>делегирование ваших обязанностей</strong> осуществлялось надлежащему лицу, и <strong>эффективно контролировать</strong> исполнение делегированных обязанностей</td></tr>
+    <tr><td><strong>SC4</strong></td><td>Вы должны <strong>надлежащим образом раскрывать</strong> любую информацию, о которой FCA или PRA вправе разумно ожидать уведомления</td></tr>
+  </table>
+
+  <div class="warn-box">
+    <div class="wb-title">Обязанность уведомления о нарушениях</div>
+    Нарушение Conduct Rules + формальные дисциплинарные меры → <strong>ОБЯЗАТЕЛЬНО уведомить регулятора</strong>. Это распространяется на <strong>ВСЕХ сотрудников</strong>, а не только на старших менеджеров. Даже младший аналитик — если нарушил Rule 1 (integrity) и фирма применила к нему дисциплинарные меры — FCA уведомляется.
+  </div>
+
+  <div class="info-box">
+    <div class="ib-title">COCON — где живут Conduct Rules</div>
+    Дополнительные сведения о SM&CR, включая список функций SMR и prescribed responsibilities, содержатся в <strong>SYSC (Senior Management Arrangement, Systems and Controls)</strong>: SYSC 23 (введение и классификация) / SYSC 24 (распределение PRs) / SYSC 25 (Management Responsibilities Maps и процедуры передачи дел) / SYSC 26 (общая и локальная ответственность) / SYSC 27 (Certification Regime). <strong>COCON</strong> — содержит Conduct Rules + руководство.
+  </div>
+</div>
+
+<!-- 3.5 FIT -->
+<div class="section-card" id="s35">
+  <div class="section-num">3.5</div>
+  <h2 class="section-title">Fit and Proper Test (FIT) — 3 критерия</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Кто проводит оценку</div>
+  <p class="para">Лица, выполняющие SMF в авторизованных фирмах, должны быть <strong>утверждены регулятором как fit and proper</strong> до начала выполнения функции. PRA и FCA могут удовлетворить заявку, если убеждены, что кандидат <strong>является fit and proper person для выполнения запрашиваемой функции</strong>. Ответственность за убеждение регулятора в соответствии кандидата лежит на <strong>фирме</strong>, подающей заявку.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Три основных критерия FIT</div>
+  <p class="para">При оценке надлежащей квалификации регулятор рассматривает факторы по ряду критериев, наиболее важными из которых являются:</p>
+
+  <div class="schema">
+    <div class="schema-title">3 критерия FIT</div>
+(1) Honesty, Integrity and Reputation
+Честность, добросовестность и репутация
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(2) Competence and Capability
+Компетентность и способности
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+(3) Financial Soundness
+Финансовая надёжность
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> (1) Honesty, Integrity, Reputation</div>
+  <p class="para">FCA принимает во внимание, было ли лицо:</p>
+  <ul class="bullet">
+    <li>Осуждено за <strong>уголовное преступление</strong> — особое внимание преступлениям, связанным с <strong>мошенничеством, нечестностью, финансовыми преступлениями</strong></li>
+    <li>Субъектом <strong>неблагоприятного решения или мирового соглашения в гражданском деле</strong> — особое внимание делам, связанным с финансовым бизнесом и мошенничеством</li>
+    <li>Субъектом <strong>предыдущего расследования или дисциплинарного производства</strong> FCA, PRA или иного регулятора</li>
+    <li>Субъектом <strong>обоснованной жалобы</strong> в связи с регулируемой деятельностью</li>
+    <li>Лишён лицензии на ведение деятельности или имел лицензию/регистрацию <strong>отозванной</strong></li>
+    <li>Причастен к <strong>несостоятельному бизнесу</strong></li>
+    <li><strong>Дисквалифицирован как директор</strong> или <strong>уволен с должности доверенного лица</strong></li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> (2) Competence and Capability</div>
+  <p class="para">FCA рассматривает:</p>
+  <ul class="bullet">
+    <li>Соответствует ли лицо <strong>применимым требованиям по обучению и компетентности</strong></li>
+    <li>Проявляло ли лицо <strong>должную квалификацию, тщательность и усердие</strong> в своей карьерной истории</li>
+    <li>Имеет ли лицо <strong>опыт, релевантный запрашиваемой SMF</strong></li>
+    <li>Имеет ли лицо <strong>необходимые квалификации</strong> (RDR, профессиональные стандарты)</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> (3) Financial Soundness</div>
+  <p class="para">FCA рассматривает, объявлялось ли лицо:</p>
+  <ul class="bullet">
+    <li><strong>Банкротом</strong></li>
+    <li>Субъектом <strong>судебного решения о долге</strong> или взыскания (особенно неисполненных)</li>
+    <li>Вступившим в <strong>Individual Voluntary Arrangement (IVA)</strong></li>
+    <li>Совершавшим <strong>какие-либо договорённости с кредиторами</strong> (например, мировое соглашение)</li>
+  </ul>
+
+  <div class="info-box">
+    <div class="ib-title">Financial soundness ≠ богатство</div>
+    FCA не требует, чтобы старший менеджер был состоятельным. Financial soundness — это то, <strong>как</strong> лицо выполняло свои финансовые обязательства в прошлом. Банкротство или неоплаченные долги могут свидетельствовать о слабом суждении — и соответственно вызывать сомнения в способности управлять делами фирмы.
+  </div>
+
+  <div class="warn-box">
+    <div class="wb-title">Перечень не является исчерпывающим</div>
+    Приведённые критерии — это <strong>примеры типов информации</strong>, которую регулятор захочет изучить. Это <strong>не исчерпывающий перечень</strong> потенциально значимых обстоятельств. Регулятор вправе принимать во внимание <strong>любые факты</strong>, вызывающие сомнения в надлежащей квалификации.
+  </div>
+
+  <div class="example-box">
+    <div class="eb-title">Пример оценки FIT</div>
+    Фирма подаёт заявку на утверждение кандидата на должность CEO (SMF1). Кандидат имеет:<br>
+    • MBA и 20 лет опыта ✓ <em>Competence</em><br>
+    • Стабильное финансовое положение ✓ <em>Financial soundness</em><br>
+    • Но: <strong>штраф по гражданскому иску £100K за введение в заблуждение</strong> в предыдущей должности (даже давно)<br><br>
+    Регулятор <strong>вправе отказать</strong> в утверждении, даже если всё остальное в порядке — на основании <strong>честности/репутации</strong>. В худшем случае — <strong>prohibition order</strong> (запрет на работу в отрасли).
+  </div>
+</div>
+
+<!-- Summary Section 3 -->
+<div class="summary-card" id="sum3">
+  <div class="summary-title">📋 Итоговое резюме — Section 3</div>
+  <ul>
+    <li><strong>SM&CR — 3 компонента:</strong> SMR (регулятор утверждает) / CR (фирма сертифицирует ежегодно) / Conduct Rules (5 индивидуальных + 4 SM, все кроме вспомогательного персонала).</li>
+    <li><strong>FIT = 3 критерия:</strong> Честность+Добросовестность+Репутация / Компетентность+Способности / Финансовая надёжность.</li>
+    <li><strong>3.1 Предыстория:</strong> ответ на кризис 2007–08 + манипуляция LIBOR. PCBS → рекомендации по подотчётности старших менеджеров. SM&CR для банков с 2016; страховщики — 2018; solo-regulated — 2019.</li>
+    <li><strong>Сфера:</strong> ВСЕ FSMA-авторизованные фирмы, <em>кроме</em> Appointed Representatives + Benchmark Administrators.</li>
+    <li><strong>3 типа solo-regulated:</strong> Limited Scope / Core (большинство) / Enhanced.</li>
+    <li><strong>Бремя доказывания:</strong> «duty of responsibility» — FCA должна доказать, что SM не предпринял разумных мер. (Не «обратное бремя».)</li>
+    <li><strong>3.2 SMR:</strong> SMF — CEO (1), CFO (2), CRO (4), Compliance (16), MLRO (17), Internal Audit, Chair, NED, SMF18 (Enhanced). Предварительное утверждение обязательно: Form A → регулятор → утверждение ДО начала функции. Regulatory reference — текущий + предыдущие работодатели за <strong>6 лет</strong>. 90-дневный законодательный срок; может быть приостановлен. Statement of Responsibilities — один SMF на одну ответственность.</li>
+    <li><strong>Prescribed Responsibilities:</strong> закреплены за наиболее старшими SMF. Management Responsibilities Map — документирует управление и распределение PR (Enhanced — обязательна).</li>
+    <li><strong>3.3 Certification Regime:</strong> фирма сертифицирует (не регулятор) — ежегодно. При найме + ежегодно после. Старшее руководство подтверждает ежегодно. Significant harm functions: CASS oversight, benchmark submitter, proprietary trader, MRT, significant management, квалифицированные роли, менеджеры certified-сотрудников, client-dealing. PRA — ограничено MRTs; FCA — шире (UK nexus). Отказ в сертификации → письменное уведомление + уведомление FCA.</li>
+    <li><strong>3.4 Conduct Rules:</strong> 5 индивидуальных + 4 SM. Все, кроме вспомогательного персонала. Индивидуальные: Integrity / Skill, care, diligence / Open with regulators / Due regard to customers / Market conduct / (Consumer Duty — Rule 6 заменяет Rule 4). SM: SC1 эффективный контроль / SC2 регуляторное соответствие / SC3 надлежащее делегирование / SC4 раскрытие FCA/PRA. Нарушения → регулятор ДОЛЖЕН быть уведомлён. Все сотрудники, не только SMF. Живут в SYSC 23–27 + COCON.</li>
+    <li><strong>3.5 FIT Test:</strong> Честность+Репутация — уголовные приговоры, гражданские решения, дисциплинарные производства, обоснованные жалобы, отзыв лицензий, несостоятельность, дисквалификация. Компетентность — T&C-требования, навыки, опыт, квалификации. Финансовая надёжность — банкротство, судебные решения о долге, IVA. Перечень не исчерпывающий. Фирма обязана убедить регулятора в соответствии кандидата.</li>
+  </ul>
+</div>
+
+</div><!-- /screen -->
+
+</div>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 1, Section 5 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 1</div>
+  <div class="app-title">Chapter 1, Section 5 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">UK Regulatory Infrastructure · Syllabus 1.5 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 5 — карта <strong>всех участников вокруг FCA и PRA</strong>. Британская регуляторная среда — это больше чем FCA и PRA. Вокруг них организации, которые <strong>напрямую регулируют</strong> (CMA, HMRC, TPR), <strong>задают политическую рамку</strong> (HM Treasury, BoE, FPC) или <strong>влияют на стандарты</strong> (FATF, BIS, IOSCO, отраслевые объединения, профессиональные ассоциации, торговые организации). На экзамене 1–2 вопроса — часто проверяют путаницу: FPC vs PRA, MPC vs FPC, HMT vs BoE.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#cma">5.1 Competition and Markets Authority (CMA)</a></li>
+    <li>→ <a href="#hmrc">5.2 HM Revenue &amp; Customs (HMRC)</a></li>
+    <li>→ <a href="#fpc">5.3 Financial Policy Committee (FPC)</a></li>
+    <li>→ <a href="#boe">5.4 Bank of England (BoE)</a></li>
+    <li>→ <a href="#hmt">5.5 HM Treasury (HMT)</a></li>
+    <li>→ <a href="#tpr">5.6 The Pensions Regulator (TPR)</a></li>
+    <li>→ <a href="#overseas">5.7 Зарубежное законодательство + FATF, BIS, IOSCO</a></li>
+    <li>→ <a href="#oversight">5.8 Надзорные и влияющие органы</a></li>
+    <li>→ <a href="#sum5">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="cma">
+  <div class="section-num">5.1</div>
+  <h2 class="section-title">Competition and Markets Authority (CMA)</h2>
+  <p class="para">CMA <strong>содействует конкуренции</strong> в интересах потребителей — как внутри, так и за пределами Великобритании.</p>
+  <div class="warn-box"><div class="wb-title">CMA — не орган финансовых услуг</div>Несмотря на охват финансовых услуг и тесное сотрудничество с FCA, CMA — <strong>универсальный конкурентный регулятор для всей экономики</strong>, а не финансовый регулятор.</div>
+  <p class="para">Деятельность CMA: расследование <strong>слияний</strong>; <strong>рыночные исследования</strong>; расследование нарушений запретов на <strong>антиконкурентные соглашения</strong> и <strong>злоупотребление доминирующим положением</strong>; <strong>уголовное преследование</strong> за картели; применение <strong>законодательства о защите потребителей</strong>; сотрудничество с отраслевыми регуляторами; консультации по правам/обязанностям; мониторинг <strong>государственных субсидий</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 3 исхода CMA</div>
+  <ul class="bullet">
+    <li>Потребители уверены в <strong>широком выборе и справедливых условиях</strong></li>
+    <li>Конкурентоспособный бизнес может <strong>внедрять инновации и процветать</strong></li>
+    <li>Экономика Великобритании <strong>растёт продуктивно и устойчиво</strong></li>
+  </ul>
+  <div class="example-box"><div class="eb-title">CMA vs FCA — Open Banking</div>FCA оценивает, как банки продают продукты. CMA оценивает, <strong>существует ли конкуренция</strong>. В 2017 году CMA <strong>обязала 9 крупнейших банков открыть API для финтехов</strong> — это стало инициативой <strong>Open Banking</strong>. Классический пример совместной работы FCA + CMA.</div>
+</div>
+
+<div class="section-card" id="hmrc">
+  <div class="section-num">5.2</div>
+  <h2 class="section-title">HM Revenue &amp; Customs (HMRC)</h2>
+  <p class="para">HMRC — <strong>основное налоговое ведомство Великобритании</strong>. Собирает подоходный налог, налог на прибыль, НДС, страховые взносы, таможенные пошлины.</p>
+  <div class="warn-box"><div class="wb-title">HMRC — не финансовый регулятор</div>HMRC не регулирует фирмы финансовых услуг. Значимость — через <strong>соглашения об обмене информацией</strong> с FCA и PRA.</div>
+  <p class="para">FCA, PRA и HMRC договорились об <strong>обмене информацией и экспертизой</strong>: для понимания поведения банков в ответ на изменения регулирования и налогообложения; выявления значимых проблем; принятия скоординированных действий. Это <strong>не означает</strong> доступ FCA к индивидуальным налоговым записям.</p>
+</div>
+
+<div class="section-card" id="fpc">
+  <div class="section-num">5.3</div>
+  <h2 class="section-title">Financial Policy Committee (FPC)</h2>
+  <p class="para">С <strong>2009 года</strong> BoE имеет законодательную цель содействовать стабильности финансовых систем Великобритании. С <strong>апреля 2013 года</strong> в BoE создан независимый <strong>FPC</strong>.</p>
+  <div class="info-box"><div class="ib-title">Мандат FPC — макропруденциальный</div>FPC <strong>выявляет, отслеживает и принимает меры для устранения системных рисков</strong> — с целью защиты <strong>устойчивости финансовой системы Великобритании</strong>. Фокус на макроэкономических угрозах долгосрочному росту. «Взгляд на систему в целом», а не на отдельные фирмы.</div>
+  <p class="para">FPC <strong>заседает не реже 4 раз в год</strong> и отвечает за <strong>полугодовой Financial Stability Report (FSR)</strong> BoE: оценка перспектив стабильности + рекомендуемые меры.</p>
+  <div class="exam-box"><div class="xb-title">FPC vs PRA — критическое различие</div><strong>FPC = макропруденциальный</strong> (системные риски — пузыри, чрезмерный леверидж, взаимосвязанность).<br><strong>PRA = микропруденциальный</strong> (устойчивость отдельной фирмы).<br>Оба в семье BoE: FPC смотрит на лес, PRA — на деревья.</div>
+</div>
+
+<div class="section-card" id="boe">
+  <div class="section-num">5.4</div>
+  <h2 class="section-title">Bank of England (BoE) — центральный банк</h2>
+  <p class="para">Два направления: <strong>Monetary Stability</strong> и <strong>Financial Stability</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (1) Monetary Stability — MPC</div>
+  <p class="para">Стабильные цены + доверие к валюте. BoE реализует инфляционную цель через корректировку базовой процентной ставки. Ставку устанавливает <strong>Monetary Policy Committee (MPC)</strong>, заседающий <strong>8 раз в год</strong> (примерно раз в шесть недель).</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (2) Financial Stability</div>
+  <p class="para">Защита от угроз всей финансовой системе через наблюдение и рыночную разведку. В <strong>исключительных обстоятельствах</strong> BoE выступает <strong>кредитором последней инстанции (lender of last resort)</strong>.</p>
+  <div class="warn-box"><div class="wb-title">Lender of last resort — только исключительные обстоятельства</div>Не стандартный инструмент, не по запросу. Используется только при угрозе <strong>системного ущерба</strong>. BoE использует собственное суждение.</div>
+  <div class="exam-box"><div class="xb-title">MPC vs FPC — частая путаница</div><strong>MPC</strong> — ставки (monetary stability), заседает <strong>8 раз/год</strong>.<br><strong>FPC</strong> — системные риски (financial stability), FSR раз в полгода, заседает <strong>≥4 раз/год</strong>.</div>
+</div>
+
+<div class="section-card" id="hmt">
+  <div class="section-num">5.5</div>
+  <h2 class="section-title">HM Treasury (HMT)</h2>
+  <p class="para">HMT — ведомство, ответственное за <strong>разработку и реализацию государственной финансово-экономической политики</strong>.</p>
+  <div class="info-box"><div class="ib-title">Роль HMT</div><strong>FCA напрямую подотчётна HMT.</strong> <strong>Chancellor of the Exchequer</strong> назначает <strong>CEO и Chairman FCA</strong>. HMT разрабатывает политику; FCA реализует её через правила и надзор. HMT <strong>не вправе диктовать</strong> отдельные надзорные решения FCA — FCA <strong>операционно независима</strong>.</div>
+</div>
+
+<div class="section-card" id="tpr">
+  <div class="section-num">5.6</div>
+  <h2 class="section-title">The Pensions Regulator (TPR)</h2>
+  <p class="para">TPR защищает <strong>пенсии на рабочем месте</strong>, регулируя работодателей, доверительных управляющих, пенсионных специалистов и консультантов.</p>
+  <div class="warn-box"><div class="wb-title">TPR — только пенсии на рабочем месте</div>Личные пенсии (SIPP, personal pension plan) — вне сферы TPR, их регулирует <strong>FCA</strong>.</div>
+  <table class="comp-table">
+    <tr><th>По вкладчику</th><th>Описание</th></tr>
+    <tr><td><strong>Contributory</strong></td><td>Часть зарплаты сотрудника + взнос работодателя — <strong>платят оба</strong></td></tr>
+    <tr><td><strong>Non-contributory</strong></td><td>Платит <strong>только работодатель</strong></td></tr>
+  </table>
+  <table class="comp-table">
+    <tr><th>По структуре выплат</th><th>Структура</th><th>Кто несёт риск</th></tr>
+    <tr><td><strong>Defined Contribution (DC)</strong></td><td>Фиксированный взнос, итоговая стоимость не гарантирована</td><td>Участник</td></tr>
+    <tr><td><strong>Defined Benefit (DB)</strong> (final salary)</td><td>Гарантированная выплата x% от итоговой зарплаты</td><td>Работодатель</td></tr>
+  </table>
+  <div class="info-box"><div class="ib-title">DB vs DC</div>DB очень дороги для работодателей — при недостаточной доходности они обязаны покрыть дефицит. Большинство частных работодателей <strong>закрыли DB для новых членов</strong> в 2000-х–2010-х.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> Pensions Act 2008 — automatic enrolment</div>
+  <p class="para">Главная цель — ввести <strong>автоматическое включение (auto-enrolment)</strong>. Критерии работников: <strong>старше 22 лет</strong>, до пенсионного возраста, доход <strong>выше установленного порога</strong>. <strong>Любой работодатель с ≥1 сотрудником</strong> несёт юридическую обязанность. При позднем соблюдении — <strong>доначисление взносов с даты, когда сотрудник впервые соответствовал критериям</strong>. Меры воздействия TPR: compliance notices / penalty notices / fines.</p>
+</div>
+
+<div class="section-card" id="overseas">
+  <div class="section-num">5.7</div>
+  <h2 class="section-title">Зарубежное законодательство + международные организации</h2>
+  <p class="para"><strong>European Union (Withdrawal) Act 2018</strong> конвертировал прямое законодательство ЕС (регламенты) в UK-закон и сохранил UK-законы, реализующие обязательства ЕС — обеспечив те же правила на следующий день после Brexit.</p>
+  <div class="example-box"><div class="eb-title">Экстерриториальное действие</div><strong>Dodd-Frank (США)</strong> и <strong>EMIR (ЕС)</strong> — экстерриториальные требования. Филиал британского банка имеет обязательство по UK EMIR <strong>независимо от места сделки и юрисдикции контрагента</strong>.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> Международные межправительственные организации</div>
+  <p class="para">Не создают правил, напрямую применяемых в UK, но их <strong>рекомендации формируют структуру регулирования</strong>.</p>
+  <table class="comp-table">
+    <tr><th>Организация</th><th>Фокус</th><th>Ключевые факты</th></tr>
+    <tr><td><strong>FATF</strong></td><td>AML / CTF</td><td>40 Рекомендаций. 200+ стран. Стандарты по виртуальным активам/крипто. Мониторинг стран.</td></tr>
+    <tr><td><strong>BIS</strong></td><td>«Банк центральных банков»</td><td>Основан 1930. 18-членный совет (6 ex-officio: Бельгия, Франция, Германия, Италия, UK, США). 63 члена-центробанка. UK = Управляющий BoE.</td></tr>
+    <tr><td><strong>IOSCO</strong></td><td>Стандарты рынка ценных бумаг</td><td>130+ юрисдикций. IOSCO Principles. Совет из 34 регуляторов. UK = CEO FCA.</td></tr>
+  </table>
+</div>
+
+<div class="section-card" id="oversight">
+  <div class="section-num">5.8</div>
+  <h2 class="section-title">Надзорные и влияющие органы</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> (1) Internal Audit</div>
+  <p class="para">Ключевая роль в поддержании и оценке систем <strong>внутреннего контроля, управления рисками и корпоративного управления</strong>. Риск-ориентированный подход. Докладывает <strong>напрямую комитету по аудиту и совету директоров</strong> — <strong>не CEO и не комплаенсу</strong> (это нарушало бы независимость).</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (2) External Audit</div>
+  <p class="para">Отраслевые знания и компетентность; <strong>объективность и независимость — как по факту, так и внешне</strong>; прямая отчётность надзорному органу (или косвенная через фирму); <strong>профессиональный скептицизм</strong>; выявление рисков существенных искажений.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (3) Trustees</div>
+  <p class="para">Доверительный управляющий (trustee) держит и управляет активом <strong>в интересах бенефициара</strong>. Может делегировать управление инвестициями, но <strong>несёт конечную ответственность за все решения</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (4) Compliance Function</div>
+  <p class="para">Помогает старшему руководству управлять <strong>compliance risks</strong>. После Brexit FCA сохранила Level 3 меры ESMA, принятые до выхода UK. <strong>Последующие изменения ESMA не применяются</strong> в UK — FCA постепенно заменяет их собственным руководством.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (5) Industry Bodies (отраслевые объединения)</div>
+  <p class="para">Схожи с торговыми ассоциациями, но более универсальны. В FS «отстаивают» успех регуляторной архитектуры UK. Пример: <strong>TheCityUK</strong> — продвигает UK как глобальный финансовый центр. Члены соблюдают <strong>кодекс поведения, приоритетный над кодексом работодателя</strong>. <strong>FX Global Code</strong> — принципы добросовестности оптового FX-рынка.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> (6) Professional Bodies (профессиональные объединения)</div>
+  <p class="para">В UK banking и finance (за исключением бухгалтерии и актуарной науки) <strong>ни одно профессиональное объединение не имеет законодательных регуляторных полномочий</strong>. Членство <strong>добровольное</strong>. Кодекс объединения имеет <strong>приоритет над кодексом работодателя</strong>.</p>
+  <div class="info-box"><div class="ib-title">CISI</div>Цель: «устанавливать стандарты профессионального совершенства и добросовестности для специалистов в области ценных бумаг, инвестиций, wealth management и финансового планирования». Кодекс CISI имеет <strong>приоритет над кодексом работодателя</strong>.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> (7) Trade Associations (торговые ассоциации)</div>
+  <p class="para">Представительские услуги фирмам в <strong>конкретном секторе с общими интересами</strong>. Работа по: развитию рынков и правил; <strong>представлению интересов</strong> перед HMT + FCA/PRA; содействию разработке <strong>пропорциональных правил</strong>.</p>
+  <div class="exam-box"><div class="xb-title">Industry bodies vs Trade associations</div><strong>Trade associations</strong> — продукт-/отраслеспецифичны (AIC, UK Finance).<br><strong>Industry bodies</strong> — шире, продвигают сектор в целом (TheCityUK).</div>
+</div>
+
+<div class="summary-card" id="sum5">
+  <div class="summary-title">📋 Итоговое резюме — Section 5</div>
+  <ul>
+    <li><strong>Statutory:</strong> CMA / HMRC / FPC / BoE / HMT / TPR. <strong>Международные:</strong> FATF / BIS / IOSCO. <strong>Надзорные:</strong> Internal/External audit / Trustees / Compliance. <strong>Влияющие:</strong> Industry bodies / Professional bodies / Trade associations.</li>
+    <li><strong>CMA:</strong> универсальный конкурентный регулятор (не FS-орган). Open Banking — результат CMA+FCA.</li>
+    <li><strong>HMRC:</strong> налоговое ведомство (не регулятор). Соглашение об обмене информацией с FCA/PRA — взаимопонимание + скоординированные действия.</li>
+    <li><strong>FPC:</strong> часть BoE с апр. 2013. Макропруденциальный. Заседает <strong>≥4 раз/год</strong>. FSR раз в полгода. FPC (макро) vs PRA (микро).</li>
+    <li><strong>BoE:</strong> Monetary Stability — MPC (<strong>8 раз/год</strong>). Financial Stability — lender of last resort (только исключительные обстоятельства).</li>
+    <li><strong>HMT:</strong> общая ответственность за FS. FCA подотчётна HMT. Chancellor назначает CEO + Chairman FCA. FCA операционно независима.</li>
+    <li><strong>TPR:</strong> только пенсии на рабочем месте (личные → FCA). Contributory/Non-contributory. DC (риск участника) / DB (риск работодателя). Pensions Act 2008 — auto-enrolment (22+, до пенс. возраста, выше порога, любой работодатель с ≥1 сотрудником). Позднее соблюдение → доначисление задним числом.</li>
+    <li><strong>Brexit:</strong> EU (Withdrawal) Act 2018. Dodd-Frank + EMIR — экстерриториальное действие. FATF (40 рекомендаций, 200+ стран) / BIS (1930, 63 центробанка, UK = Управляющий BoE) / IOSCO (130+ юрисдикций, UK = CEO FCA).</li>
+    <li><strong>Oversight:</strong> Internal audit — комитету по аудиту + совету, не CEO. External audit — независим в факте И внешне. Trustees — конечная ответственность. Compliance — Level 3 ESMA сохранены, дальнейшие изменения не применяются. Professional bodies (CISI) — кодекс выше кодекса работодателя, нет законодательных полномочий. Trade associations — отраслеспецифичны, advocacy перед HMT/FCA/PRA.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

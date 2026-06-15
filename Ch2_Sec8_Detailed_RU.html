@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 8 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 8 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Product Disclosure · Right to Cancel · Syllabus 2.12 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 8 охватывает два связанных вопроса: <strong>раскрытие информации о продукте</strong> (KIID для UCITS, KFD для packaged products, PRIIPs KID для страховых и прочих упакованных розничных инвестиций) и <strong>право на отмену (cooling-off)</strong> — право клиента передумать в течение 14 или 30 дней. На экзамене 3–5 вопросов с акцентом на числа и таблицы.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s81">8.1 KIID — Key Investor Information Document (UCITS)</a></li>
+    <li>→ <a href="#s82kfd">8.1.2 KFD — Key Features Document</a></li>
+    <li>→ <a href="#s83">8.1.3 PRIIPs KID — Key Information Document</a></li>
+    <li>→ <a href="#s84">8.2 Право на отмену (Right to Cancel)</a></li>
+    <li>→ <a href="#s85">8.2.1 Периоды отмены — 14 или 30 дней</a></li>
+    <li>→ <a href="#s86">8.2.2 Обязательные раскрытия</a></li>
+    <li>→ <a href="#s87">8.2.3 Реализация права на отмену</a></li>
+    <li>→ <a href="#s88">8.2.4 Ведение документации</a></li>
+    <li>→ <a href="#sum8">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s81">
+  <div class="section-num">8.1 / 8.1.1</div>
+  <h2 class="section-title">KIID — Key Investor Information Document (UCITS)</h2>
+  <p class="para">Основная цель правил раскрытия — предоставить клиентам <strong>достаточную и релевантную информацию</strong> для принятия инвестиционного решения. Применяется как к рекомендованным, так и к самостоятельно выбранным инвестициям.</p>
+  <table class="comp-table">
+    <tr><th>Документ</th><th>Для кого</th><th>Охватывает</th></tr>
+    <tr><td><strong>KIID</strong> (Key Investor Information Document)</td><td>AFMs, управляющие UCITS schemes</td><td>UCITS funds</td></tr>
+    <tr><td><strong>KFD</strong> (Key Features Document)</td><td>Фирмы, предлагающие packaged products</td><td>Packaged products, cash deposit ISA, cash deposit CTF</td></tr>
+    <tr><td><strong>PRIIPs KID</strong> (Key Information Document)</td><td>Производители + советники/продавцы PRIIPs</td><td>Инвестиционные фонды, страховые, структурированные ценные бумаги, структурированные депозиты</td></tr>
+  </table>
+  <div class="sub-title"><span class="sub-num">▸</span> 5 обязательных элементов KIID</div>
+  <ul class="bullet">
+    <li>(a) <strong>Идентификация схемы</strong></li>
+    <li>(b) Краткое описание <strong>инвестиционных целей и инвестиционной политики</strong></li>
+    <li>(c) Представление <strong>прошлой доходности</strong> или (где релевантно) <strong>сценариев доходности</strong></li>
+    <li>(d) <strong>Затраты и сборы</strong></li>
+    <li>(e) <strong>Профиль риска и доходности</strong>, включая руководство и предупреждения о рисках</li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> 3 исключения — когда KIID не требуется</div>
+  <ul class="bullet">
+    <li>Другая фирма <strong>договорилась подготовить</strong> такой документ</li>
+    <li>Для <strong>определённых типов схем</strong>, где информация уже предоставлена достаточно подробно в другом документе</li>
+    <li>Для <strong>договоров перестрахования и pure protection insurance</strong> — применяются специальные правила</li>
+  </ul>
+  <div class="exam-box">
+    <div class="xb-title">Мнемоника KIID</div>
+    Производится AFMs для UCITS. Fair/clear/not misleading + согласован с проспектом. 5 элементов: <strong>ID / цели+политика / прошлая доходность / затраты / риск+доходность</strong>. 3 исключения: другая фирма договорилась / уже в другом документе / перестрахование + pure protection.
+  </div>
+</div>
+
+<div class="section-card" id="s82kfd">
+  <div class="section-num">8.1.2</div>
+  <h2 class="section-title">KFD — Key Features Document</h2>
+  <p class="para">Правила раскрытия информации о продукте требуют от фирмы подготовки KFD <strong>заблаговременно</strong> в отношении:</p>
+  <ul class="bullet">
+    <li>Каждого <strong>packaged product</strong></li>
+    <li><strong>Cash deposit ISA</strong></li>
+    <li><strong>Cash deposit Child Trust Fund (CTF)</strong></li>
+    <li><strong>Key features illustration</strong> для каждого packaged product, производимого фирмой</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Что такое packaged product</div>
+    Не один конкретный продукт, а <strong>категория</strong>: полисы страхования жизни, личные пенсии, unit trusts, investment trust savings schemes, ISAs, CTFs — всё, что «упаковывает» внутренние инвестиции в единый продукт для розничного клиента. Именно для этих продуктов требуется KFD.
+  </div>
+</div>
+
+<div class="section-card" id="s83">
+  <div class="section-num">8.1.3</div>
+  <h2 class="section-title">PRIIPs KID — Key Information Document</h2>
+  <p class="para">Регламент о KID для <strong>PRIIPs (Packaged Retail and Insurance-based Investment Products)</strong> вводит KID, охватывающий не только CIS, но и другие «упакованные» инвестиционные продукты банков или страховых компаний. KID — <strong>короткий документ</strong> с ключевыми фактами в <strong>чёткой и понятной форме</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Цель PRIIPs</div>
+  <p class="para">Помочь инвесторам <strong>лучше понять и сравнить</strong> ключевые характеристики, риски, вознаграждения и затраты различных PRIIPs через <strong>короткий, дружественный потребителю KID</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> UCITS и PRIIPs — исключение до 31 декабря 2026</div>
+  <p class="para">UCITS уже имеет собственные KIID и KFD. UCITS подпадает под <strong>5-летний период освобождения</strong> от PRIIPs. <strong>Период продлён до 31 декабря 2026</strong>. После этой даты UCITS также перейдёт на PRIIPs KID.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 4 категории PRIIPs</div>
+  <ul class="bullet">
+    <li><strong>Инвестиционные фонды</strong></li>
+    <li><strong>Страховые инвестиционные продукты</strong> (например, unit-linked insurance bonds)</li>
+    <li><strong>Розничные структурированные ценные бумаги</strong></li>
+    <li><strong>Структурированные срочные депозиты</strong></li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> Формат и структура KID</div>
+  <p class="para">PRIIPs KID должен быть: <strong>самостоятельным документом</strong> / в <strong>стандартизированном формате</strong> / максимум <strong>3 страницы формата A4</strong> / в <strong>строгой 7-секционной последовательности</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 7 разделов PRIIPs KID</div>
+  <ul class="bullet">
+    <li>Что это за продукт?</li>
+    <li>Каковы риски и что я могу получить в ответ?</li>
+    <li>Что произойдёт, если [название производителя] не сможет произвести выплату?</li>
+    <li>Каковы затраты?</li>
+    <li>Как долго нужно держать продукт и можно ли досрочно забрать деньги?</li>
+    <li>Как подать жалобу?</li>
+    <li>Прочая релевантная информация</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">«Retail client» для PRIIPs — более широкое определение</div>
+    Для PRIIPs: retail client = (1) retail clients по MiFID ИЛИ (2) customers по IDD (Insurance Distribution Directive), которые не квалифицировались бы как professional clients по MiFID. Охват шире, чем просто MiFID retail.
+  </div>
+</div>
+
+<div class="section-card" id="s84">
+  <div class="section-num">8.2</div>
+  <h2 class="section-title">Право на отмену (Right to Cancel) — общая структура</h2>
+  <p class="para">«Cooling-off period» — период после заключения договора, в течение которого клиент может <strong>передумать и отменить договор без объяснения причин</strong>. Применяется к <strong>retail customers</strong>. Professional clients и ECP — <strong>права на отмену нет</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> К кому применяется</div>
+  <p class="para">К фирмам, предоставляющим <strong>розничные финансовые продукты на основе designated investments или депозитов</strong>; к фирмам, заключающим <strong>дистанционные договоры с потребителями</strong> по депозитам или designated investments.</p>
+</div>
+
+<div class="section-card" id="s85">
+  <div class="section-num">8.2.1</div>
+  <h2 class="section-title">Периоды отмены — 14 или 30 дней</h2>
+  <table class="comp-table">
+    <tr><th>Тип продукта</th><th>Период отмены</th></tr>
+    <tr><td>Страхование жизни или пенсия (включая endowment полисы, personal pension schemes, stakeholder pensions)</td><td><strong>30 календарных дней</strong></td></tr>
+    <tr><td>Cash deposit ISA</td><td><strong>14 календарных дней</strong></td></tr>
+    <tr><td>Другие (не страхование жизни/пенсия): инвестиционные продукты, дистанционные договоры по депозитам и т.д.</td><td><strong>14 календарных дней</strong></td></tr>
+  </table>
+  <div class="sub-title"><span class="sub-num">▸</span> Когда начинается период</div>
+  <p class="para">Период начинается с <strong>более поздней из двух дат</strong>: даты <strong>заключения договора</strong> ИЛИ даты <strong>получения клиентом договорной информации</strong> (всех условий). Это означает: если фирма задержала предоставление условий — период cooling-off продлевается.</p>
+  <div class="example-box">
+    <div class="eb-title">Пример</div>
+    Клиент подписал endowment полис 1 мая. Полная договорная информация пришла по почте 5 мая. 30-дневный период начинается с <strong>5 мая</strong> (позднейшая дата) → клиент может отменить до <strong>3 июня</strong>.
+  </div>
+</div>
+
+<div class="section-card" id="s86">
+  <div class="section-num">8.2.2</div>
+  <h2 class="section-title">Обязательные раскрытия о праве на отмену</h2>
+  <p class="para">Фирма обязана раскрыть клиенту <strong>5 элементов</strong> о праве на отмену:</p>
+  <ul class="bullet">
+    <li><strong>Наличие</strong> права на отмену</li>
+    <li><strong>Продолжительность</strong> периода</li>
+    <li><strong>Условия</strong> (включая любые <strong>затраты</strong>, связанные с реализацией права)</li>
+    <li><strong>Последствия</strong>, если право не реализовано</li>
+    <li><strong>Как реализовать</strong> право (практическая механика)</li>
+  </ul>
+  <p class="para">Эта информация предоставляется в <strong>durable medium</strong> <strong>до заключения договора</strong>. Если это невозможно — <strong>немедленно после</strong>.</p>
+</div>
+
+<div class="section-card" id="s87">
+  <div class="section-num">8.2.3</div>
+  <h2 class="section-title">Реализация права на отмену</h2>
+  <p class="para">Для реализации права на отмену клиент должен <strong>уведомить фирму</strong>. Уведомление считается своевременным, если оно <strong>отправлено до истечения срока</strong> — считается дата отправки, а не получения фирмой.</p>
+  <div class="info-box">
+    <div class="ib-title">Ключевые особенности</div>
+    Клиент <strong>не обязан указывать причину</strong> отмены.<br>
+    При отмене клиент <strong>может не получить полную сумму назад</strong> — рыночные движения применяются. Если фонд упал на 5% за 14 дней — клиент получит меньше уплаченного.
+  </div>
+  <div class="warn-box">
+    <div class="wb-title">Важный нюанс для экзамена</div>
+    Многие думают, что отмена означает <strong>полный возврат</strong>. Это НЕ так. Для инвестиционных продуктов клиент несёт <strong>рыночный риск</strong> с момента заключения до отмены. Возвращается <strong>текущая стоимость инвестиции</strong>, а не первоначальная сумма.
+  </div>
+</div>
+
+<div class="section-card" id="s88">
+  <div class="section-num">8.2.4</div>
+  <h2 class="section-title">Ведение документации — сроки хранения</h2>
+  <table class="comp-table">
+    <tr><th>Тип</th><th>Срок хранения</th></tr>
+    <tr><td>Пенсионные переводы, pension opt-outs, FSAVCs</td><td><strong>Бессрочно</strong></td></tr>
+    <tr><td>Полисы страхования жизни, пенсионные договоры, personal pension schemes, stakeholder pension schemes</td><td>Не менее <strong>5 лет</strong></td></tr>
+    <tr><td>Все остальные случаи</td><td>Не менее <strong>3 лет</strong></td></tr>
+  </table>
+</div>
+
+<div class="summary-card" id="sum8">
+  <div class="summary-title">📋 Итоговое резюме — Section 8</div>
+  <ul>
+    <li><strong>Ключевые числа:</strong> KIID — 5 элементов. PRIIPs KID — максимум <strong>3 страницы A4</strong>, <strong>7 разделов</strong>. UCITS освобождён от PRIIPs до <strong>31 декабря 2026</strong>. PRIIPs — <strong>4 категории</strong>. Cooling-off: life/pension — <strong>30 дней</strong>; cash deposit ISA / другие — <strong>14 дней</strong>. Документация: пенсионные переводы — <strong>бессрочно</strong> / life-pension — <strong>≥5 лет</strong> / другие — <strong>≥3 года</strong>.</li>
+    <li><strong>8.1.1 KIID:</strong> AFMs для UCITS. Fair/clear/not misleading + согласован с проспектом. 5 элементов: идентификация / цели+политика / прошлая доходность или сценарии / затраты / профиль риска+доходности. 3 исключения: другая фирма / уже в другом документе / перестрахование+pure protection.</li>
+    <li><strong>8.1.2 KFD:</strong> каждый packaged product / cash deposit ISA / cash deposit CTF / key features illustration для каждого производимого packaged product.</li>
+    <li><strong>8.1.3 PRIIPs KID:</strong> для PRIIPs (инвестфонды / страховые-инвестиционные / розничные структурированные / структурированные депозиты). Стандартизированный, самостоятельный, макс. 3 A4, 7 разделов. In good time before сделки. UCITS освобождён до 31 дек. 2026. Retail для PRIIPs: MiFID retail ИЛИ IDD customer, не квалифицирующийся как MiFID professional.</li>
+    <li><strong>8.2 Право на отмену:</strong> только retail customers. 30 дней — life/pension. 14 дней — cash deposit ISA / другие. Период начинается с позднейшей из двух дат: заключение договора ИЛИ получение договорной информации.</li>
+    <li><strong>8.2.2 Раскрытия — 5 элементов:</strong> наличие права + продолжительность + условия (включая затраты) + последствия нереализации + как реализовать. Durable medium. До заключения (или немедленно после).</li>
+    <li><strong>8.2.3 Реализация:</strong> уведомить фирму. Считается дата отправки. Причина не требуется. Клиент может не получить полную сумму — рыночные движения применяются.</li>
+    <li><strong>8.2.4 Сроки хранения:</strong> пенсионные переводы/opt-outs/FSAVCs — <strong>бессрочно</strong>. Life/pension контракты — <strong>≥5 лет</strong>. Прочие — <strong>≥3 года</strong>.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

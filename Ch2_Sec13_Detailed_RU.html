@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 13 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 13 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Client Assets (CASS) · Syllabus 2.22 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 13 — заключительная и одна из самых критических. Это <strong>CASS (Client Assets Sourcebook)</strong>: правила защиты <strong>денег клиентов</strong> и <strong>активов клиентов</strong>. Логика: при банкротстве фирмы деньги и активы клиентов <strong>не должны попасть к кредиторам фирмы</strong>. Для этого — сегрегация, statutory trust, строгие процедуры сверки и ежегодный аудиторский отчёт. На экзамене 3–5 вопросов: <strong>CASS 6, CASS 7, CASS 7.17.2R, 20 дней, 25 рабочих дней</strong>.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s131">13.1 Цель CASS — зачем нужна сегрегация</a></li>
+    <li>→ <a href="#s132">13.2 Структура CASS — главы 6 и 7</a></li>
+    <li>→ <a href="#s133">13.3 Statutory Trust — CASS 7.17.2R</a></li>
+    <li>→ <a href="#s134">13.4 Исключения из CASS</a></li>
+    <li>→ <a href="#s135">13.5 Client Bank Account — процедура открытия</a></li>
+    <li>→ <a href="#s136">13.6 Custody Assets — CASS 6</a></li>
+    <li>→ <a href="#s137">13.7 Сверка — стандартный vs альтернативный подход</a></li>
+    <li>→ <a href="#s138">13.8 Client Assets Report</a></li>
+    <li>→ <a href="#s139">13.9 CASS Oversight — SMF18</a></li>
+    <li>→ <a href="#sum13">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s131">
+  <div class="section-num">13.1</div>
+  <h2 class="section-title">Цель CASS — зачем нужна сегрегация</h2>
+  <p class="para">CASS применяется ко <strong>всем категориям клиентов</strong> (retail + professional + ECP) — в отличие от многих других правил COBS. Причина: речь идёт не о поведении, а о <strong>праве собственности</strong> — даже ECP имеет право знать, что его активы не смешаны с деньгами фирмы.</p>
+  <div class="info-box">
+    <div class="ib-title">Главная цель CASS — сегрегация</div>
+    Деньги клиентов должны быть <strong>отделены от денег фирмы</strong>. Если фирма обанкротится — деньги клиентов <strong>не пойдут на погашение долгов фирмы</strong>.
+  </div>
+  <p class="para">После краха <strong>Lehman Brothers</strong> (2008) выяснилось, что клиентские деньги не были должным образом сегрегированы, и клиенты годами добивались их возврата. FCA существенно ужесточила CASS с тех пор.</p>
+</div>
+
+<div class="section-card" id="s132">
+  <div class="section-num">13.2</div>
+  <h2 class="section-title">Структура CASS</h2>
+  <table class="comp-table">
+    <tr><th>Глава</th><th>Что регулирует</th><th>Сфера применения</th></tr>
+    <tr><td><strong>CASS 5</strong></td><td>Клиентские деньги — страховое посредничество</td><td>Страховые брокеры</td></tr>
+    <tr><td><strong>CASS 6</strong></td><td><strong>Custody rules</strong> — финансовые инструменты</td><td>Фирмы, хранящие финансовые инструменты клиентов (MiFID + non-MiFID safeguarding)</td></tr>
+    <tr><td><strong>CASS 7</strong></td><td><strong>Client Money</strong> — денежные средства клиентов</td><td>UK MiFID investment firm + non-MiFID opt-in</td></tr>
+    <tr><td><strong>CASS 10</strong></td><td>CASS resolution pack</td><td>Документация для управляющего при банкротстве</td></tr>
+  </table>
+  <div class="exam-box">
+    <div class="xb-title">CASS 6 vs CASS 7</div>
+    <strong>CASS 6 = custody rules = финансовые инструменты (ценные бумаги) клиентов.</strong><br>
+    <strong>CASS 7 = client money rules = денежные средства клиентов.</strong>
+  </div>
+</div>
+
+<div class="section-card" id="s133">
+  <div class="section-num">13.3</div>
+  <h2 class="section-title">Statutory Trust — CASS 7.17.2R</h2>
+  <p class="para">Обычно сегрегация достигается путём <strong>немедленного размещения клиентских денег</strong> на отдельном клиентском счёте в банке.</p>
+  <div class="info-box">
+    <div class="ib-title">CASS 7.17.2R — ключевая правовая конструкция</div>
+    Фирма держит деньги клиентов <strong>В ДОВЕРИТЕЛЬНОМ УПРАВЛЕНИИ (IN TRUST)</strong>. Траст является <strong>statutory trust</strong>, созданным правилами CASS 7.17.2R. Фирма = доверительный управляющий; клиент = бенефициар. Деньги <strong>не принадлежат фирме</strong> — даже если банковский счёт открыт на её имя.
+  </div>
+  <p class="para">При банкротстве фирмы: деньги на клиентских счётах <strong>НЕ являются частью имущественной массы фирмы</strong>. Управляющий не может распределить эти средства среди кредиторов. Клиенты получают деньги обратно напрямую.</p>
+</div>
+
+<div class="section-card" id="s134">
+  <div class="section-num">13.4</div>
+  <h2 class="section-title">Исключения из CASS</h2>
+  <p class="para">Основные исключения: ICVCs (OEICs) / UCITS-qualifying schemes / кредитные институты, действующие как «банкир» / монеты для стоимости металла / DvP-транзакции (<strong>если только расчёты не провалятся в течение 3 рабочих дней</strong>) / деньги, причитающиеся фирме / полная передача права собственности в целях обеспечения.</p>
+  <div class="info-box">
+    <div class="ib-title">Смешанные поступления (mixed remittances)</div>
+    Если фирма получает чек, содержащий и деньги клиента, и комиссии фирмы — <strong>вся сумма первоначально рассматривается как клиентские деньги</strong>, пока фирма не выделит свою долю.
+  </div>
+</div>
+
+<div class="section-card" id="s135">
+  <div class="section-num">13.5</div>
+  <h2 class="section-title">Client Bank Account — процедура открытия</h2>
+  <p class="para">При открытии клиентского банковского счёта фирма <strong>обязана направить банку уведомление</strong> о том, что: банк не должен объединять деньги на клиентском счёте с другими счетами фирмы; наименование клиентского счёта должно отличаться от других счетов фирмы.</p>
+  <div class="warn-box">
+    <div class="wb-title">20 дней — подтверждение от банка (UK счета)</div>
+    Для UK банковских счетов банк обязан <strong>подтвердить доверительный статус в течение 20 дней</strong>. Если подтверждение не получено — фирма обязана <strong>вывести деньги и немедленно разместить в другом банке</strong>.
+  </div>
+  <div class="info-box">
+    <div class="ib-title">Новое правило — запрет до получения подтверждения</div>
+    Теперь правила <strong>запрещают размещение клиентских денег на счёте ДО того</strong>, как получено подписанное подтверждение от банка. Нельзя внести деньги и ждать 20 дней.
+  </div>
+  <p class="para">В уведомлении/подтверждении банк должен подтвердить: счёт держится фирмой <strong>как trustee для клиентов</strong>; банк <strong>не объединит</strong> деньги с другими счетами; банк <strong>не имеет права зачёта</strong> против клиентского счёта; деньги являются клиентскими, а не принадлежат фирме.</p>
+</div>
+
+<div class="section-card" id="s136">
+  <div class="section-num">13.6</div>
+  <h2 class="section-title">Custody Assets — CASS 6</h2>
+  <p class="para">При хранении клиентских активов фирмы обязаны принимать надлежащие меры: защищать право собственности клиентов в случае банкротства фирмы / <strong>не использовать клиентские активы за свой счёт</strong> (кроме как при явном согласии клиента) / обеспечивать надлежащее оформление правового титула.</p>
+  <div class="info-box">
+    <div class="ib-title">Явное согласие клиента — securities lending</div>
+    По умолчанию: фирма <strong>НЕ МОЖЕТ</strong> использовать клиентские активы. Но при <strong>явном согласии клиента</strong> — разрешено (например, securities lending). Без согласия — это присвоение клиентских активов.
+  </div>
+</div>
+
+<div class="section-card" id="s137">
+  <div class="section-num">13.7</div>
+  <h2 class="section-title">Сверка — стандартный vs альтернативный подход</h2>
+  <table class="comp-table">
+    <tr><th>Подход</th><th>Частота внутренней сверки</th></tr>
+    <tr><td><strong>Стандартный</strong></td><td>Не реже одного раза <strong>каждые 25 рабочих дней</strong></td></tr>
+    <tr><td><strong>Альтернативный</strong></td><td><strong>Каждый рабочий день</strong></td></tr>
+  </table>
+  <p class="para">При выявлении <strong>дефицита</strong> (у фирмы меньше клиентских денег, чем должно быть) — фирма обязана <strong>немедленно внести собственные деньги</strong> для покрытия дефицита в ожидании расследования. При <strong>излишке</strong> — перечислить на клиентский счёт. Оба действия — как можно скорее.</p>
+</div>
+
+<div class="section-card" id="s138">
+  <div class="section-num">13.8</div>
+  <h2 class="section-title">Client Assets Report — ежегодный аудиторский отчёт</h2>
+  <p class="para">Фирмы, хранящие деньги или активы клиентов, привлекают независимого аудитора для ежегодного <strong>Client Assets Report</strong> — аудита <strong>соблюдения правил CASS</strong>.</p>
+  <table class="comp-table">
+    <tr><th>Тип отчёта</th><th>Что означает</th></tr>
+    <tr><td><strong>Reasonable assurance</strong></td><td>Позитивная форма — аудитор даёт положительное заключение о соблюдении CASS. Более высокий стандарт.</td></tr>
+    <tr><td><strong>Limited assurance</strong></td><td>Негативная форма — аудитор не обнаружил ничего, свидетельствующего о несоблюдении. Более низкий стандарт.</td></tr>
+  </table>
+  <div class="warn-box">
+    <div class="wb-title">Ключевой факт для экзамена</div>
+    При проведении <strong>reasonable assurance</strong> Report аудитор обязан принимать во внимание <strong>СОБСТВЕННУЮ ОЦЕНКУ РИСКОВ ФИРМЫ</strong> в отношении клиентских активов. Эта оценка является основой для определения объёма и направленности аудита.
+  </div>
+</div>
+
+<div class="section-card" id="s139">
+  <div class="section-num">13.9</div>
+  <h2 class="section-title">CASS Oversight — SMF18 и Resolution Pack</h2>
+  <p class="para">По SM&CR фирмы, хранящие деньги или активы клиентов, обязаны назначить <strong>CASS oversight senior manager function (SMF18)</strong> — лицо, персонально ответственное за: надзор за соблюдением CASS; отчётность о нарушениях регулятору; обеспечение надлежащих систем и контроля; актуальность resolution pack (CASS 10).</p>
+  <div class="info-box">
+    <div class="ib-title">CASS 10 — Resolution Pack</div>
+    Пакет документов для управляющего при банкротстве фирмы. Содержит: идентификацию всех клиентских счетов и custody счетов / контактные данные банков и кастодианов / информацию о сегрегационных мерах / список клиентов и их прав / ключи/пароли/доступы для insolvency practitioners. Должен быть предоставлен <strong>в течение 48 часов</strong> по запросу.
+  </div>
+</div>
+
+<div class="summary-card" id="sum13">
+  <div class="summary-title">📋 Итоговое резюме — Section 13</div>
+  <ul>
+    <li><strong>Цель CASS:</strong> сегрегация защищает клиентские деньги/активы от кредиторов фирмы при банкротстве. Применяется ко ВСЕМ категориям (retail + professional + ECP).</li>
+    <li><strong>CASS 6</strong> = custody rules (финансовые инструменты). <strong>CASS 7</strong> = client money rules (денежные средства). <strong>CASS 10</strong> = resolution pack.</li>
+    <li><strong>CASS 7.17.2R — Statutory Trust:</strong> клиентские деньги держатся в трасте. При банкротстве — НЕ часть имущественной массы. Клиенты получают деньги обратно полностью.</li>
+    <li><strong>Исключения:</strong> ICVCs/OEICs, UCITS, кредитные институты как «банкир», DvP (если расчёты в срок ≤3 рабочих дня), полная передача права собственности. Mixed remittances — вся сумма = клиентские деньги до сегрегации.</li>
+    <li><strong>Клиентский банковский счёт:</strong> уведомление банку (не объединять, отдельное наименование). Подтверждение от банка — <strong>20 дней</strong> (UK); иначе вывести и разместить в другом банке ASAP. Запрет на размещение денег ДО получения подписанного подтверждения.</li>
+    <li><strong>CASS 6 Custody:</strong> надлежащие меры защиты права собственности + нельзя использовать за свой счёт (только с явного согласия клиента) + корректное оформление правового титула + если фирма владеет nominee — та же ответственность.</li>
+    <li><strong>Сверка:</strong> Стандартный = каждые <strong>25 рабочих дней</strong>. Альтернативный = <strong>ежедневно</strong>. Дефицит → немедленно внести собственные деньги. Излишек → немедленно перечислить клиентам.</li>
+    <li><strong>Client Assets Report:</strong> ежегодный. Reasonable assurance (позитивный) / Limited assurance (негативный). Для reasonable assurance — аудитор должен принять во внимание <strong>собственную оценку рисков фирмы</strong>.</li>
+    <li><strong>SMF18 + CASS 10:</strong> именованный старший менеджер. Resolution pack — в течение <strong>48 часов</strong> по запросу управляющего.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

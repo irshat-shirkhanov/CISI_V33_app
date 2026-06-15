@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 1, Section 7 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 1</div>
+  <div class="app-title">Chapter 1, Section 7 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Training and Competence · Syllabus 1.8 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 7 — о <strong>компетентности людей, работающих в сфере финансовых услуг</strong>. FCA требует от фирм обеспечить, чтобы <strong>каждый сотрудник, участвующий в регулируемой деятельности</strong>, обладал достаточными знаниями и навыками. Закреплено в Principle 3 + <strong>T&amp;C Sourcebook</strong>. Ключевое: сотрудник <strong>не может осуществлять деятельность самостоятельно</strong>, пока фирма не <strong>оценила его как компетентного</strong>. Плюс <strong>CPD</strong> — 35 часов/год + <strong>SPS</strong> от CISI. Связь с SM&amp;CR Certification Regime. На экзамене 1–2 вопроса.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s71">7.1 Общие требования — Principle 3 + SYSC</a></li>
+    <li>→ <a href="#s72">7.2 Требования для розничных фирм — оценка + надзор</a></li>
+    <li>→ <a href="#s73">7.3 Квалификация до начала деятельности</a></li>
+    <li>→ <a href="#s74">7.4 Statements of Professional Standing (SPS)</a></li>
+    <li>→ <a href="#cpd">CPD — 35 часов/год</a></li>
+    <li>→ <a href="#cert">Связь с Certification Regime</a></li>
+    <li>→ <a href="#sum7">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s71">
+  <div class="section-num">7.1</div>
+  <h2 class="section-title">Общие требования — Principle 3 + SYSC</h2>
+  <p class="para"><strong>Principle 3</strong> (управление и контроль) требует от фирм <strong>проявлять разумную заботу об организации и эффективном контроле</strong>. Для выполнения — обеспечить, чтобы <strong>каждый сотрудник, участвующий в регулируемой деятельности, достигал и поддерживал необходимый уровень компетентности</strong>.</p>
+  <p class="para">Принципы конкретизируются в <strong>SYSC</strong> (FCA Handbook + PRA Rule Book) — включает <strong>высокоуровневое требование к компетентности для ВСЕХ UK-авторизованных фирм</strong>, включая wholesale.</p>
+  <div class="info-box"><div class="ib-title">SYSC vs T&C Sourcebook</div><strong>SYSC</strong> — высокий уровень, применяется ко <strong>всем фирмам</strong> (розничным и оптовым).<br><strong>T&amp;C Sourcebook</strong> — детальный, применяется к фирмам с <strong>розничными клиентами</strong> (+ отдельные случаи для customers/consumers). Фокус T&amp;C — на достигаемых <strong>результатах</strong> внутренних программ обучения.</div>
+  <div class="example-box"><div class="eb-title">Практический охват</div><strong>Оптовый торговый деск</strong> (институциональные клиенты) → только SYSC.<br><strong>IFA, консультирующий розничных клиентов</strong> → SYSC + T&amp;C Sourcebook (квалификации, CPD, надзор).</div>
+</div>
+
+<div class="section-card" id="s72">
+  <div class="section-num">7.2</div>
+  <h2 class="section-title">Требования для розничных фирм: оценка + надзор</h2>
+  <div class="info-box"><div class="ib-title">Правило оценки</div>T&amp;C Sourcebook требует от фирм <strong>не признавать сотрудника компетентным</strong> для осуществления specified activities до тех пор, пока: сотрудник не <strong>продемонстрировал необходимую компетентность</strong> и не <strong>сдал каждый модуль</strong> соответствующего экзамена. Оценка <strong>не обязательно должна предшествовать</strong> началу деятельности — но без оценки сотрудник обязан работать <strong>под надзором</strong>.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> Надзор до оценки компетентности</div>
+  <p class="para">Фирмы <strong>обязаны обеспечивать надлежащий надзор ВО ВСЁ ВРЕМЯ</strong>. FCA ожидает, что интенсивность надзора будет <strong>значительно выше В ПЕРИОД ДО</strong> оценки компетентности. Фирмы должны иметь <strong>чёткие критерии и процедуры</strong> момента оценки — чтобы обосновать снижение уровня надзора.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Требования к supervisors</div>
+  <ul class="bullet">
+    <li>Необходимые <strong>навыки коучинга и оценки</strong></li>
+    <li><strong>Технические знания</strong> — для компетентного надзора и оценки</li>
+    <li>Следует оценить, целесообразно ли <strong>требовать от supervisors сдачи экзамена</strong>, если подчинённые ещё не оценены как компетентные</li>
+  </ul>
+  <div class="warn-box"><div class="wb-title">Packaged products — supervisor ОБЯЗАН сдать экзамен</div>Если сотрудник <strong>консультирует по packaged products</strong> розничных клиентов — фирма <strong>обязана</strong> обеспечить, чтобы <strong>supervisor сдал соответствующий экзамен</strong>. Более строгое требование, чем общее правило.</div>
+</div>
+
+<div class="section-card" id="s73">
+  <div class="section-num">7.3</div>
+  <h2 class="section-title">Квалификационные требования ДО начала деятельности</h2>
+  <p class="para">Фирмы <strong>не должны допускать сотрудников к specified activity с квалификационным требованием</strong> без предварительной сдачи соответствующего регуляторного модуля.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Виды деятельности, требующие квалификации до начала</div>
+  <ul class="bullet">
+    <li>Определённые <strong>виды деятельности по консультированию и дилингу</strong></li>
+    <li>Работа в качестве <strong>broker fund adviser</strong></li>
+    <li>Консультирование по <strong>участию в синдикатах Lloyd's</strong></li>
+    <li>Работа в качестве <strong>pension transfer specialist</strong></li>
+  </ul>
+  <div class="info-box"><div class="ib-title">Appropriate Qualifications Table (TC App 4)</div>FCA публикует <strong>таблицы подходящих квалификаций (TC App 4)</strong>. Виды деятельности — в <strong>Appendix 1.1.1R</strong> T&amp;C Sourcebook. Квалификационные требования применяются к: advising (но не dealing) по ценным бумагам; advising по деривативам; advising по packaged products; advising по friendly society policies; advising + dealing по ценным бумагам; advising + dealing по деривативам.</div>
+  <div class="sub-title"><span class="sub-num">▸</span> Устаревшие квалификации — gap-filling</div>
+  <p class="para">Если квалификация больше не входит в текущую Appropriate Qualifications Table — фирма <strong>обязана оценить необходимость дополнительного обучения для восполнения пробелов (gap-filling)</strong>. Автоматического «дедовского» правила нет.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Освобождение на основании зарубежного опыта</div>
+  <p class="para"><div class="number-card">Минимум 3 года</div> Для освобождения от квалификационного требования необходимо <strong>не менее 3 лет релевантного зарубежного опыта</strong>. Фирма должна тщательно оценить соответствие UK-требованиям.</p>
+</div>
+
+<div class="section-card" id="s74">
+  <div class="section-num">7.4</div>
+  <h2 class="section-title">Statements of Professional Standing (SPS)</h2>
+  <p class="para">В соответствии с <strong>Adviser Charging rules</strong> розничные инвестиционные советники обязаны иметь действующий <strong>SPS</strong> от <strong>FCA-аккредитованной организации</strong> (например, <strong>CISI</strong>).</p>
+  <p class="para">SPS подтверждает: <strong>квалификацию QCF Level 4</strong> из списка FCA Handbook; <strong>35 часов CPD</strong> в год; соблюдение <strong>APER и/или SM&amp;CR</strong>; согласие соблюдать <strong>кодекс этики</strong>.</p>
+  <div class="info-box"><div class="ib-title">Детали SPS</div>Действителен <strong>12 месяцев</strong>. Содержит: имя советника; аккредитованную организацию + подпись уполномоченного; <strong>дату окончания верификации</strong> (max 12 мес.); подтверждение верификации квалификаций; подтверждение ежегодной декларации (актуальные знания + кодекс этики).</div>
+</div>
+
+<div class="section-card" id="cpd">
+  <div class="section-num">7.4.1</div>
+  <h2 class="section-title">CPD — Continuing Professional Development</h2>
+  <div class="info-box"><div class="ib-title">Минимальное требование FCA</div>Не менее <strong>35 часов релевантного CPD в год</strong>, из которых <strong>не менее 21 часа — структурированное обучение</strong>.</div>
+  <table class="comp-table">
+    <tr><th>Показатель</th><th>Часы</th></tr>
+    <tr><td>Всего CPD в год</td><td><strong>35 часов</strong></td></tr>
+    <tr><td>Структурированное (минимум)</td><td><strong>21 час</strong></td></tr>
+    <tr><td>Неструктурированное (максимум)</td><td><strong>14 часов</strong></td></tr>
+  </table>
+  <p class="para"><strong>Structured</strong> — формальные курсы, семинары, вебинары, экзамены с учебными целями. <strong>Unstructured</strong> — чтение профессиональных изданий, самостоятельное обучение, неформальные обсуждения.</p>
+  <div class="exam-box"><div class="xb-title">FCA — минимальная планка; professional bodies могут выше</div>FCA устанавливает минимум. Professional bodies (CISI) <strong>могут устанавливать более высокие требования</strong>. Не могут опускаться ниже FCA, но могут превышать.</div>
+</div>
+
+<div class="section-card" id="cert">
+  <div class="section-num">7.5</div>
+  <h2 class="section-title">Связь T&amp;C с SM&amp;CR Certification Regime</h2>
+  <p class="para">T&amp;C + <strong>SM&amp;CR Certification Regime</strong> работают совместно. Фирмы оценивают fit and proper <strong>ежегодно</strong>. <strong>CPD — ключевой механизм</strong> подтверждения постоянной компетентности certified persons. <strong>Записи о CPD</strong> — важное доказательство для ежегодной аттестации. CPD применяется к <strong>обеим категориям</strong>: Senior Managers (SMFs) + Certified persons.</p>
+  <div class="example-box"><div class="eb-title">Сценарий — сдать экзамен недостаточно</div>Том только что устроился в wealth management компанию. Он <strong>сдал соответствующий экзамен CISI</strong>, но фирма <strong>ещё не провела официальную оценку компетентности</strong>.<br><br>Может ли Том давать инвестиционные советы розничным клиентам?<br><strong>НЕТ</strong> — сдача экзамена необходима, но недостаточна. Фирма обязана <strong>официально оценить компетентность</strong> перед самостоятельной работой. До этого — <strong>под надзором компетентного сотрудника</strong>.</div>
+</div>
+
+<div class="summary-card" id="sum7">
+  <div class="summary-title">📋 Итоговое резюме — Section 7</div>
+  <ul>
+    <li><strong>T&amp;C framework:</strong> SYSC (высокий уровень) → все UK-фирмы включая wholesale. T&amp;C Sourcebook (детальный) → фирмы с розничными клиентами. Компетентность = Qualifications + Assessment + Supervision + CPD + SPS.</li>
+    <li><strong>7.1:</strong> Principle 3 — разумная забота об организации и контроле. SYSC — для ВСЕХ UK-авторизованных фирм. T&amp;C — для розничных, фокус на результатах.</li>
+    <li><strong>7.2 Оценка:</strong> не признавать компетентным до демонстрации компетентности + модулей экзамена. Оценка не обязательно до начала деятельности — но без неё требуется надзор. Интенсивность надзора значительно выше ДО оценки. Supervisors: квалификация + коучинг + технические знания. Packaged products → supervisor ОБЯЗАН сдать экзамен.</li>
+    <li><strong>7.3 Квалификации до начала:</strong> broker fund adviser, syndicate participation (Lloyd's), pension transfer specialist, определённые advising+dealing activities. TC App 4 / Appendix 1.1.1R. Устаревшие → gap-filling. Зарубежный опыт → минимум <strong>3 года</strong>.</li>
+    <li><strong>7.4 SPS:</strong> обязателен для розничных инвестиционных советников. Аккредитованная организация (CISI). Действителен <strong>12 месяцев</strong>. QCF Level 4 + 35 ч CPD + APER/SM&amp;CR + кодекс этики.</li>
+    <li><strong>CPD:</strong> минимум <strong>35 ч/год</strong>, из них ≥<strong>21 ч структурированного</strong>. FCA = минимум. CISI может выше.</li>
+    <li><strong>Связь с SM&amp;CR:</strong> CPD — ключевой механизм ежегодной оценки fit and proper. Certified persons + SMFs. Сдача экзамена недостаточна — требуется официальная оценка фирмой.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

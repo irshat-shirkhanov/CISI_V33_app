@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 12 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 12 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Reporting of Transactions · Syllabus 2.20–2.21 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 12 — «отчётная» сторона работы инвестиционной фирмы. После каждой сделки фирма отчитывается на нескольких уровнях: регулятору (<strong>transaction reporting</strong>), рынку (<strong>trade reporting</strong>), торговому репозиторию (<strong>EMIR</strong> для деривативов, <strong>SFTR</strong> для securities financing), и <strong>клиенту</strong>. У каждого режима свои сроки и исключения. На экзамене 5–7 вопросов: <strong>T+1, 1 минута, 5 минут, 3 минуты, 3:30pm, 8pm, 6 месяцев</strong>.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s121">12.1 Reportable Transactions</a></li>
+    <li>→ <a href="#s1221">12.2.1 UK MiFIR — Transaction vs Trade Reporting</a></li>
+    <li>→ <a href="#s1222">12.2.2 UK EMIR</a></li>
+    <li>→ <a href="#s1223">12.2.3 UK SSR</a></li>
+    <li>→ <a href="#s1224">12.2.4 UK SFTR</a></li>
+    <li>→ <a href="#s123">12.3 LSE-специфические правила</a></li>
+    <li>→ <a href="#s124">12.4 Отчётность перед клиентами</a></li>
+    <li>→ <a href="#sum12">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s121">
+  <div class="section-num">12.1</div>
+  <h2 class="section-title">Reportable Transactions</h2>
+  <p class="para">Reportable transactions — сделки в 3 типах инструментов: (1) финансовые инструменты, допущенные к торгам (или по которым подана заявка); (2) инструменты, в основе которых — инструмент, торгуемый на торговой площадке; (3) инструменты, в основе которых — индекс/корзина из таких инструментов.</p>
+  <p class="para">Обязательство распространяется независимо от того, где произошла сделка (UK/Gibraltar/EU/OTC). <strong>Дедлайн: T+1</strong> (закрытие следующего рабочего дня). Именно фирма сама определяет, является ли инструмент reportable.</p>
+</div>
+
+<div class="section-card" id="s1221">
+  <div class="section-num">12.2.1</div>
+  <h2 class="section-title">UK MiFIR — Transaction vs Trade Reporting</h2>
+  <table class="comp-table">
+    <tr><th>Характеристика</th><th>Transaction Reporting</th><th>Trade Reporting</th></tr>
+    <tr><td>Цель</td><td>Информация регулятору → надзор за рыночными злоупотреблениями</td><td>Рынку → прозрачность цен</td></tr>
+    <tr><td>Аудитория</td><td>FCA (Transaction Monitoring Unit — TMU)</td><td>Рынок (публично)</td></tr>
+    <tr><td>Стороны</td><td><strong>Двусторонняя</strong> — обе стороны (если обе UK financial)</td><td><strong>Односторонняя</strong></td></tr>
+    <tr><td>Дедлайн</td><td><strong>T+1</strong></td><td><strong>1 минута</strong> — акции; <strong>5 минут</strong> — неакционерные</td></tr>
+  </table>
+  <div class="info-box">
+    <div class="ib-title">ARMs — Approved Reporting Mechanisms</div>
+    Примеры: UnaVista, TRAX. Фирма может аутсорсить техническую подачу, но <strong>остаётся ответственной за точность</strong>. Использование ARM не перекладывает ответственность.
+  </div>
+  <p class="para">MiFID II расширил post-trade reporting и на <strong>неакционерные финансовые инструменты</strong> на RM/MTF/OTF.</p>
+</div>
+
+<div class="section-card" id="s1222">
+  <div class="section-num">12.2.2</div>
+  <h2 class="section-title">UK EMIR — деривативный репозиторий</h2>
+  <p class="para">Все сделки с <strong>деривативами</strong> отчитываются в <strong>торговый репозиторий</strong>. Двусторонняя: UK counterparties → UK EMIR, EU counterparties → EU EMIR. По соглашению одна из сторон может отчитываться за обе.</p>
+  <div class="warn-box">
+    <div class="wb-title">Non-UK entities — НЕТ обязательства по UK EMIR</div>
+    Включая <strong>UK branches третьестранних фирм</strong> (например, лондонское отделение канадского банка). В отличие от MiFIR, где UK-отделение третьестранней фирмы — в сфере действия.
+  </div>
+</div>
+
+<div class="section-card" id="s1223">
+  <div class="section-num">12.2.3</div>
+  <h2 class="section-title">UK SSR — Short Selling Regulation</h2>
+  <p class="para">SSR вводит уведомительный режим для инвесторов с <strong>нетто-короткими позициями</strong>. FCA получает полномочия вмешательства в неблагоприятных условиях. Дедлайн уведомления: <strong>к 3:30pm торгового дня, следующего после</strong> достижения позиции. Расчёт позиции: <strong>по состоянию на полночь</strong> торгового дня достижения. Исключение: маркет-мейкеры и авторизованные первичные дилеры.</p>
+</div>
+
+<div class="section-card" id="s1224">
+  <div class="section-num">12.2.4</div>
+  <h2 class="section-title">UK SFTR — Securities Financing Transactions</h2>
+  <p class="para">Основные типы SFT: repo, reverse repo, securities lending/borrowing, buy-sell backs, margin lending. Отчётность в торговый репозиторий → FCA. Может быть двусторонней.</p>
+  <div class="warn-box">
+    <div class="wb-title">Исключение: non-financial counterparties (UK-специфика)</div>
+    HM Treasury освободило <strong>нефинансовые компании</strong> от отчётности по UK SFTR. Отличие от EU SFTR, где корпоративные контрагенты обязаны отчитываться.
+  </div>
+</div>
+
+<div class="section-card" id="s123">
+  <div class="section-num">12.3</div>
+  <h2 class="section-title">LSE-специфические правила</h2>
+  <p class="para">Две системы LSE: <strong>SETS</strong> (UK equities), <strong>IOB</strong> (depositary receipts). Торги на order books → <strong>автоматические отчёты о сделках</strong>, ручная подача не нужна.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Off-order book сделки</div>
+  <p class="para">Сделки вне электронных книг заявок — отчёт <strong>в течение 3 минут</strong> с момента исполнения. Торговый период: <strong>7:15am – 5:15pm</strong> каждый рабочий день.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Кто отчитывается</div>
+  <ul class="bullet">
+    <li>Равный статус → <strong>продающая фирма</strong> отчитывается</li>
+    <li>Разный статус → <strong>более старшая сторона</strong> (обычно маркет-мейкер)</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">CREST дедлайн</div>
+    Для расчётов через CREST: отчёт <strong>до 8:00pm</strong> каждого рабочего дня.
+  </div>
+</div>
+
+<div class="section-card" id="s124">
+  <div class="section-num">12.4</div>
+  <h2 class="section-title">Отчётность перед клиентами</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> Trade confirmations</div>
+  <p class="para">При исполнении поручения для retail-клиента фирма обязана предоставить подтверждение в durable medium: <strong>как можно скорее после исполнения, не позднее первого рабочего дня (T+1)</strong>.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> Periodic statements — по умолчанию каждые 6 месяцев</div>
+  <table class="comp-table">
+    <tr><th>Ситуация</th><th>Частота</th></tr>
+    <tr><td>Стандарт для retail</td><td><strong>Каждые 6 месяцев</strong></td></tr>
+    <tr><td>Портфель с leveraged transactions</td><td><strong>Ежемесячно</strong></td></tr>
+    <tr><td>По запросу клиента</td><td>Ежеквартально</td></tr>
+    <tr><td>Онлайн-доступ с актуальной оценкой</td><td>Не реже 1 раза в год</td></tr>
+    <tr><td>Professional clients</td><td>По соглашению с клиентом</td></tr>
+  </table>
+  <div class="warn-box">
+    <div class="wb-title">10% depreciation notification</div>
+    Если розничный портфель теряет <strong>10% стоимости</strong> (и кратные 10%), фирма уведомляет клиента <strong>к концу рабочего дня, в который порог был пересечён</strong>.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Сроки хранения документации</div>
+  <table class="comp-table">
+    <tr><th>Тип</th><th>Срок</th></tr>
+    <tr><td>MiFID-бизнес</td><td><strong>5 лет</strong></td></tr>
+    <tr><td>Non-MiFID (общий)</td><td><strong>3 года</strong></td></tr>
+    <tr><td>Полисы страхования жизни, пенсионные</td><td><strong>5 лет</strong></td></tr>
+    <tr><td>Пенсионные переводы, opt-outs, FSAVCs</td><td><strong>Бессрочно</strong></td></tr>
+  </table>
+</div>
+
+<div class="summary-card" id="sum12">
+  <div class="summary-title">📋 Итоговое резюме — Section 12</div>
+  <ul>
+    <li><strong>5 режимов отчётности:</strong> UK MiFIR Transaction (FCA, T+1, двусторонняя, надзор) / UK MiFIR Trade (рынок, 1/5 мин, односторонняя, прозрачность) / UK EMIR (деривативы, репозиторий) / UK SSR (нетто-короткие, 3:30pm T+1) / UK SFTR (SFT, репозиторий, корпоративные контрагенты UK освобождены).</li>
+    <li><strong>12.1 Reportable:</strong> 3 типа инструментов. Дедлайн T+1. Фирма сама определяет.</li>
+    <li><strong>12.2.1 MiFIR Transaction vs Trade:</strong> Transaction = dual-sided / T+1 / FCA-TMU / надзор. Trade = single-sided / 1 мин (акции) / 5 мин (неакционерные) / рынок. ARM не снимает ответственность.</li>
+    <li><strong>12.2.2 UK EMIR:</strong> деривативы → репозиторий. Non-UK entities (включая UK branches третьестранних) — НЕТ обязательства по UK EMIR.</li>
+    <li><strong>12.2.3 UK SSR:</strong> нетто-короткие → уведомление к <strong>3:30pm T+1</strong>, расчёт на <strong>полночь</strong>. Маркет-мейкеры и первичные дилеры освобождены.</li>
+    <li><strong>12.2.4 UK SFTR:</strong> repo, sec lending и др. → репозиторий. UK нефинансовые — ОСВОБОЖДЕНЫ (HM Treasury).</li>
+    <li><strong>LSE:</strong> off-order book — <strong>3 минуты</strong>. Период: <strong>7:15am–5:15pm</strong>. Равный статус → продающая. CREST → до <strong>8pm</strong>.</li>
+    <li><strong>Клиентская отчётность:</strong> Trade confirmation — ASAP, не позднее T+1. Periodic statements: retail — <strong>6 месяцев</strong> по умолчанию; с leveraged — ежемесячно; по запросу — ежеквартально. 10% depreciation → уведомление в тот же рабочий день. Хранение: MiFID = 5 лет; non-MiFID = 3 года; pension transfers = бессрочно.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

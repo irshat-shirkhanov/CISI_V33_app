@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 2, Section 9 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 2</div>
+  <div class="app-title">Chapter 2, Section 9 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Conflicts of Interest · Syllabus 2.13 · CISI V33</div>
+</div>
+<div class="screen">
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">Section 9 охватывает <strong>конфликты интересов</strong> — один из наиболее чувствительных аспектов работы финансовой фирмы. Правила (SYSC и COBS) требуют <strong>выявлять, предотвращать и управлять</strong> такими конфликтами. Особое внимание уделяется инвестиционным исследованиям — здесь потенциал для злоупотреблений огромен. На экзамене 4–6 вопросов, часто в виде сценариев.</div>
+</div>
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s91">9.1 Принципы и правила о конфликтах</a></li>
+    <li>→ <a href="#s911">9.1.1 5 типов конфликтов + информационные барьеры</a></li>
+    <li>→ <a href="#s92">9.2 Раскрытие конфликтов — крайняя мера</a></li>
+    <li>→ <a href="#s93">9.3 Политика управления конфликтами</a></li>
+    <li>→ <a href="#s94">9.4 Инвестиционные исследования</a></li>
+    <li>→ <a href="#sum9">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s91">
+  <div class="section-num">9.1</div>
+  <h2 class="section-title">Принципы и правила о конфликтах — Principle 8 и SYSC</h2>
+  <div class="info-box">
+    <div class="ib-title">Principle 8 — Conflicts of Interest</div>
+    «A firm must manage conflicts of interest fairly, both between itself and its customers and between a customer and another client.»
+  </div>
+  <div class="warn-box">
+    <div class="wb-title">Где находятся правила</div>
+    Принцип — <strong>PRIN (Principle 8)</strong>. Детальные правила — <strong>SYSC</strong>. НЕ в COBS (COBS содержит правила о раскрытии и поведении с клиентами). Путаница PRIN/SYSC/COBS — частая ловушка на экзамене.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> Две оси конфликтов</div>
+  <p class="para">Фирмы обязаны принимать все надлежащие меры для <strong>выявления, предотвращения и/или управления</strong> конфликтами интересов между:</p>
+  <ul class="bullet">
+    <li><strong>Фирмой</strong> (включая менеджеров, сотрудников, ARs/tied agents и связанные стороны) <strong>и клиентом</strong></li>
+    <li><strong>Одним клиентом</strong> фирмы и <strong>другим клиентом</strong></li>
+  </ul>
+</div>
+
+<div class="section-card" id="s911">
+  <div class="section-num">9.1.1</div>
+  <h2 class="section-title">5 типов конфликтов + информационные барьеры</h2>
+  <div class="sub-title"><span class="sub-num">▸</span> 5 типов конфликтов</div>
+  <table class="comp-table">
+    <tr><th>#</th><th>Тип конфликта</th><th>Пример</th></tr>
+    <tr><td>1</td><td>Реализация финансовой выгоды или избежание финансового убытка <strong>за счёт клиента</strong></td><td>Фирма продаёт клиенту продукт из собственного инвентаря по завышенной цене</td></tr>
+    <tr><td>2</td><td>Интерес в исходе услуги/сделки, <strong>отличный от интереса клиента</strong></td><td>Брокер рекомендует IPO, чтобы помочь подразделению корпоративных финансов разместить выпуск</td></tr>
+    <tr><td>3</td><td>Стимул <strong>отдавать предпочтение одному клиенту</strong> в ущерб другим</td><td>Управляющий фондом даёт лучшие аллокации крупному институциональному клиенту за счёт розничных</td></tr>
+    <tr><td>4</td><td>Ведение <strong>того же бизнеса, что и клиент</strong></td><td>Проп-трейдинг фирмы конкурирует с хедж-фондом-клиентом за те же alpha signals</td></tr>
+    <tr><td>5</td><td>Получение <strong>вознаграждений от третьих сторон</strong>, превышающих стандартные комиссии/сборы</td><td>IFA получает повышенные комиссии от одного провайдера и преимущественно рекомендует его продукты</td></tr>
+  </table>
+  <div class="sub-title"><span class="sub-num">▸</span> Обязанности фирмы по управлению</div>
+  <ul class="bullet">
+    <li>Поддерживать и применять <strong>эффективные организационные и административные меры</strong>, предотвращающие негативное влияние конфликтов на клиентов</li>
+    <li>Для производящих внешнее инвестиционное исследование — <strong>барьеры</strong>, препятствующие передаче информации из исследовательской деятельности в остальную часть бизнеса</li>
+    <li>Разработать, поддерживать и реализовывать <strong>эффективную политику управления конфликтами</strong></li>
+    <li>Предоставить retail-клиентам и потенциальным клиентам <strong>описание политики управления конфликтами</strong></li>
+    <li>Вести <strong>записи о деятельности, при которой возник конфликт</strong></li>
+  </ul>
+  <div class="sub-title"><span class="sub-num">▸</span> Информационные барьеры (Chinese walls)</div>
+  <p class="para">Один из типов организационных мер. Соглашение, по которому информация, известная сотруднику в одной части бизнеса, <strong>не передаётся</strong> (или, если невозможно — хотя бы <strong>не используется</strong>) людьми в другой части.</p>
+  <div class="example-box">
+    <div class="eb-title">Классический пример</div>
+    Инвестиционный банк имеет подразделение <strong>корпоративных финансов</strong> (работает над M&amp;A-сделкой для компании X) и подразделение <strong>equity research</strong> (пишет рекомендации по акциям X). Барьер: корпоративные финансы не могут передавать знания о готовящейся сделке исследовательской команде. Research пишет на основе только <strong>публичной информации</strong>. Невозможность передать эти знания клиентам <strong>не считается</strong> нарушением обязанности.
+  </div>
+</div>
+
+<div class="section-card" id="s92">
+  <div class="section-num">9.2</div>
+  <h2 class="section-title">Раскрытие конфликтов — крайняя мера</h2>
+  <p class="para">Когда установленные фирмой меры <strong>НЕ достаточны</strong> для разумной уверенности в предотвращении ущерба интересам клиента — фирма обязана <strong>чётко раскрыть</strong> общий характер и/или источник конфликтов интересов клиенту <strong>ДО</strong> осуществления бизнеса от имени клиента.</p>
+  <div class="warn-box">
+    <div class="wb-title">Раскрытие = КРАЙНЯЯ МЕРА, не первый шаг</div>
+    Предпочтительный подход — <strong>предотвратить</strong> или <strong>управлять</strong> конфликтом через организационные меры. Только если это невозможно — раскрыть и дать клиенту решать. Раскрытие ≠ решение проблемы.
+  </div>
+  <div class="sub-title"><span class="sub-num">▸</span> 3 требования к раскрытию</div>
+  <ul class="bullet">
+    <li>В <strong>durable medium</strong></li>
+    <li>Содержать <strong>достаточный уровень детализации</strong> с учётом характера клиента</li>
+    <li>Позволить клиенту <strong>принять обоснованное решение</strong> о продолжении обслуживания</li>
+  </ul>
+  <div class="info-box">
+    <div class="ib-title">Раскрытие не освобождает от организационных обязательств</div>
+    Раскрытие конфликтов <strong>НЕ освобождает фирму</strong> от обязательства поддерживать эффективные организационные меры (SYSC 10.1.3). Чрезмерное использование раскрытия без надлежащего управления конфликтами — <strong>не допускается</strong>.
+  </div>
+</div>
+
+<div class="section-card" id="s93">
+  <div class="section-num">9.3</div>
+  <h2 class="section-title">Политика управления конфликтами</h2>
+  <p class="para">Фирмы обязаны иметь письменную <strong>политику управления конфликтами интересов</strong>, соразмерную масштабу и характеру бизнеса. Если фирма является частью группы — политика должна учитывать конфликты, возникающие из структуры/деятельности других членов группы.</p>
+  <div class="sub-title"><span class="sub-num">▸</span> 2 обязательных компонента политики</div>
+  <table class="comp-table">
+    <tr><th>Компонент</th><th>Что включает</th></tr>
+    <tr><td><strong>1. Обстоятельства</strong></td><td>Обстоятельства, способные порождать конфликт. Особое внимание — случаям, когда лицо выполняет 2+ роли: investment research + advice / проп-трейдинг / portfolio management / корпоративные финансы</td></tr>
+    <tr><td><strong>2. Процессы/Процедуры</strong></td><td>Процессы и процедуры предотвращения и/или управления такими конфликтами</td></tr>
+  </table>
+  <div class="sub-title"><span class="sub-num">▸</span> 5 процедур управления конфликтами</div>
+  <ul class="bullet">
+    <li><strong>Контроль информации</strong> — предотвращение обмена информацией, способной нанести ущерб интересам клиентов</li>
+    <li><strong>Раздельный надзор</strong> — за лицами, занятыми в деятельности для разных клиентов с конфликтующими интересами</li>
+    <li><strong>Устранение прямой связи</strong> между вознаграждением лиц, чья деятельность может порождать конфликты</li>
+    <li>Меры по <strong>предотвращению или ограничению</strong> ненадлежащего влияния одного лица на другое</li>
+    <li>Меры по <strong>контролю участия</strong> лица в серии видов деятельности, способных породить конфликт</li>
+  </ul>
+</div>
+
+<div class="section-card" id="s94">
+  <div class="section-num">9.4</div>
+  <h2 class="section-title">Инвестиционные исследования и рекомендации</h2>
+  <p class="para"><strong>Investment research</strong> — информация, рекомендующая или предлагающая инвестиционную стратегию, включая мнение о текущей или будущей стоимости/цене инвестиций, предназначенная для <strong>публичного распространения</strong> (а не только для внутреннего использования).</p>
+  <div class="info-box">
+    <div class="ib-title">Требования к investment research</div>
+    • Чётко маркировано как <strong>investment research</strong><br>
+    • Представлено как <strong>объективное или независимое объяснение</strong> предмета исследования<br>
+    • <strong>НЕ представляется</strong> фирмой как личная рекомендация клиенту
+  </div>
+  <table class="comp-table">
+    <tr><th>Характеристика</th><th>Investment Research</th><th>Investment Recommendations (UK MAR)</th></tr>
+    <tr><td>Регулируется</td><td>COBS / SYSC</td><td>UK MAR</td></tr>
+    <tr><td>Аудитория</td><td>Публичное распространение</td><td>Один или несколько клиентов</td></tr>
+    <tr><td>Личная рекомендация</td><td>НЕТ — не должна являться</td><td>Зависит от контекста</td></tr>
+  </table>
+  <div class="sub-title"><span class="sub-num">▸</span> SYSC 10.1.11R — меры для финансовых аналитиков</div>
+  <p class="para">Если фирма производит investment research, она обязана обеспечить:</p>
+  <ul class="bullet">
+    <li><strong>Предотвращение dealing ahead</strong> — аналитики и другие релевантные лица, знающие о вероятном сроке/содержании не опубликованного ещё исследования, <strong>не совершают личных сделок и не торгуют для других</strong>, пока получатели исследования не получат разумную возможность среагировать</li>
+    <li><strong>Личные сделки</strong> по инвестициям, являющимся предметом исследования — <strong>только с предварительного одобрения compliance/legal</strong> и только в <strong>исключительных обстоятельствах</strong></li>
+    <li>Фирма и аналитики <strong>не принимают вознаграждений</strong> от лиц, имеющих материальный интерес в предмете исследования</li>
+    <li><strong>Не обещать эмитентам благоприятное освещение</strong></li>
+    <li>Черновики investment research с рекомендацией или целевой ценой — <strong>только аналитики</strong> могут их проверять (другие — только для проверки соответствия юридическим обязательствам)</li>
+  </ul>
+  <div class="warn-box">
+    <div class="wb-title">Справедливое представление — раскрытие влияния эмитента</div>
+    В рамках требований <strong>fair presentation</strong> фирмы обязаны указывать материальные источники — включая то, <strong>была ли рекомендация раскрыта эмитенту и изменена до распространения</strong>. Это обеспечивает прозрачность влияния эмитента на аналитика.
+  </div>
+</div>
+
+<div class="summary-card" id="sum9">
+  <div class="summary-title">📋 Итоговое резюме — Section 9</div>
+  <ul>
+    <li><strong>Архитектура управления конфликтами:</strong> Предотвращение (организационные меры, первоочередно) → Управление (информационные барьеры, раздельный надзор, устранение связи с вознаграждением) → Раскрытие (КРАЙНЯЯ МЕРА, если первые два недостаточны).</li>
+    <li><strong>Principle 8:</strong> «A firm must manage conflicts of interest fairly, both between itself and its customers and between a customer and another client.» Детальные правила — <strong>SYSC</strong> (не COBS).</li>
+    <li><strong>2 оси конфликтов:</strong> (1) фирма (включая менеджеров/сотрудников/ARs/связанные стороны) vs клиент; (2) один клиент vs другой клиент.</li>
+    <li><strong>5 типов конфликтов:</strong> (1) финансовая выгода за счёт клиента; (2) интерес в исходе, отличный от интереса клиента; (3) стимул отдавать предпочтение одному клиенту; (4) ведение того же бизнеса, что и клиент; (5) вознаграждения от третьих сторон сверх стандартных.</li>
+    <li><strong>Информационные барьеры:</strong> сотрудники одной части бизнеса не передают/не используют информацию в другой части. Применяется только если хотя бы одна из частей осуществляет регулируемую деятельность. Требует постоянного мониторинга.</li>
+    <li><strong>9.2 Раскрытие — КРАЙНЯЯ МЕРА,</strong> когда меры не достаточны. 3 требования: durable medium + достаточный уровень детализации + обоснованное решение. <strong>НЕ освобождает</strong> от организационных обязательств (SYSC 10.1.3). Чрезмерное использование не допускается.</li>
+    <li><strong>9.3 Политика — 2 компонента:</strong> (1) обстоятельства (мульти-роль: research+advice, проп-трейдинг, PM, корпоративные финансы); (2) процессы/процедуры. 5 процедур: контроль информации / раздельный надзор / устранение связи вознаграждения / предотвращение ненадлежащего влияния / контроль серии видов деятельности. Для corporate finance фирм — особое внимание к процессу размещения + allocation/pricing.</li>
+    <li><strong>9.4 Investment research:</strong> публичное распространение, чётко маркировано как независимое, НЕ личная рекомендация. SYSC 10.1.11R: предотвращать dealing ahead / личные сделки только с одобрения compliance (исключительные обстоятельства) / не принимать вознаграждений / не обещать благоприятное освещение / черновики — только аналитикам. Fair presentation: раскрывать влияние эмитента (изменял ли рекомендацию до публикации).</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

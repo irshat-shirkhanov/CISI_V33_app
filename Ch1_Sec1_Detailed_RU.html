@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 1, Section 1 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 1</div>
+  <div class="app-title">Chapter 1, Section 1 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">The Regulatory Environment · Syllabus 1.1 · CISI V33</div>
+</div>
+
+<div class="screen">
+
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">
+    Section 1 — это <strong>основа всего силлабуса</strong>. Она описывает, <em>как</em> устроена система финансового регулирования в Великобритании: кто главные участники (FCA и PRA), какой закон лежит в основе их работы (FSMA 2000 с поправками по FSA 2012 и FSMA 2023), каковы <strong>statutory objectives</strong> (законодательно закреплённые цели) каждого из них, как они делят фирмы между собой по принципу <strong>«twin peaks»</strong> («двух вершин»), откуда берут деньги и перед кем отчитываются. Это вопросы «где регулятор находится на карте» — ~3–4 вопроса на экзамене — но без понимания этой секции все последующие главы не складываются в единую картину.
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s11">1.1 FSMA 2000 и FS Act 2012 — правовая основа</a></li>
+    <li>→ <a href="#split">Twin peaks — разделение на FCA и PRA</a></li>
+    <li>→ <a href="#s12">1.2 Statutory Objectives — цели FCA и PRA</a></li>
+    <li>→ <a href="#fca-obj">FCA — 1 стратегическая + 3 операционные</a></li>
+    <li>→ <a href="#pra-obj">PRA — безопасность и устойчивость + страхование</a></li>
+    <li>→ <a href="#secondary">Secondary objective (FSMA 2023) — международная конкурентоспособность</a></li>
+    <li>→ <a href="#accountability">Подотчётность — 4 механизма</a></li>
+    <li>→ <a href="#supervision">Надзор — как регулятор наблюдает</a></li>
+    <li>→ <a href="#s13">1.3 Rule-Making Powers — Part 9A FSMA</a></li>
+    <li>→ <a href="#handbook">FCA Handbook — rules / guidance / evidential</a></li>
+    <li>→ <a href="#sum1">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<!-- 1.1 -->
+<div class="section-card" id="s11">
+  <div class="section-num">1.1</div>
+  <h2 class="section-title">FSMA 2000 и FS Act 2012 — правовая основа</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Что такое FSMA</div>
+  <p class="para"><strong>Financial Services and Markets Act (FSMA) 2000</strong> — это основной закон, регулирующий финансовые услуги в Великобритании. Он вступил в силу в 2001 году и с тех пор неоднократно изменялся. Его главная цель — обеспечить <strong>более надёжную защиту потребителей</strong>, чем та, что существовала в рамках предыдущего подхода (когда отрасль по большей части регулировала сама себя).</p>
+
+  <div class="info-box">
+    <div class="ib-title">Что означает «person» в FSMA</div>
+    FSMA применяется ко всем «persons» в Великобритании. В контексте FSMA понятие <strong>«person»</strong> означает: физических лиц (individuals) и все виды юридических лиц — компании, инкорпорированные структуры, партнёрства, трасты и иные некорпоративные объединения. Понятие максимально широкое — это <strong>не только компании</strong>.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> General prohibition — Section 19 FSMA</div>
+  <p class="para">Вести регулируемую деятельность <em>в качестве бизнеса</em> в Великобритании без наличия статуса <strong>authorised</strong> (авторизованного) лица или статуса <strong>exempt person</strong> (освобождённого лица) является <strong>уголовным преступлением</strong>. Это называется <strong>«general prohibition»</strong> и закреплено в <strong>Section 19 FSMA</strong>.</p>
+
+  <div class="warn-box">
+    <div class="wb-title">Уголовное преступление — это серьёзно</div>
+    Нарушение general prohibition — это не административное нарушение, а <strong>уголовное преступление</strong>. Кроме того, договоры, заключённые неавторизованной фирмой с клиентом, являются <strong>unenforceable</strong> (не имеющими юридической силы) в отношении клиента: клиент может расторгнуть сделку, фирма — не может принудить к исполнению.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> FS Act 2012 — переход к twin peaks</div>
+  <p class="para">В <strong>2012 году</strong> FSMA был существенно изменён <strong>Financial Services Act 2012</strong>, который вступил в силу в <strong>апреле 2013 года</strong>. До этого существовал <strong>единый регулятор — Financial Services Authority (FSA)</strong>. Кризис 2007–2008 годов показал, что монолитный регулятор испытывает трудности: вопросы поведения (misselling продуктов) и вопросы пруденциального надзора (банки с недостаточным капиталом) требуют разной экспертизы.</p>
+  <p class="para"><strong>FS Act 2012 разделил FSA на три части:</strong></p>
+  <ul class="bullet">
+    <li><strong>Financial Conduct Authority (FCA)</strong> — регулятор поведения + пруденциальный надзор для фирм, не подпадающих под PRA</li>
+    <li><strong>Prudential Regulation Authority (PRA)</strong> — пруденциальный надзор для крупнейших фирм (с 2016 года — часть Bank of England)</li>
+    <li><strong>Financial Policy Committee (FPC)</strong> — макропруденциальный надзор / системные риски, часть Bank of England</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> FS Act 2023 — постбрексетная реформа</div>
+  <p class="para">В <strong>июне 2023 года</strong> <strong>Financial Services and Markets Act 2023</strong> получил Royal Assent (королевское одобрение). Отдельные положения вступили в силу в <strong>августе 2023 года</strong>, остальные — <strong>1 января 2024 года</strong>. Этот Акт:</p>
+  <ul class="bullet">
+    <li>Запускает процесс <strong>отмены retained EU law</strong> в сфере финансовых услуг</li>
+    <li>Наделяет HM Treasury, PRA и FCA полномочиями заменять законодательство ЕС <strong>британскими правилами</strong>, разработанными для рынков Великобритании</li>
+    <li>Укрепляет британский регуляторный режим — обновляет цели PRA и FCA, добавляя <strong>усиленный акцент на долгосрочный рост и международную конкурентоспособность</strong> (новая <em>secondary objective</em>)</li>
+    <li>Реализует <strong>«Smarter Regulatory Framework»</strong> — общую реформу подхода к регулированию</li>
+  </ul>
+  <p class="para">Отмена законодательства ЕС — <strong>длительный процесс</strong>, который PRA и FCA осуществляют в рамках <strong>поэтапного подхода к внедрению</strong>.</p>
+</div>
+
+<!-- Twin peaks -->
+<div class="section-card" id="split">
+  <div class="section-num">1.1.1</div>
+  <h2 class="section-title">Twin Peaks — разделение на FCA и PRA</h2>
+
+  <p class="para">Британская модель регулирования известна как подход <strong>«twin peaks»</strong> («две вершины»). Логика: для <strong>deposit takers, insurers и investment banks</strong> действуют <strong>два разных надзорных органа</strong> — один сосредоточен на пруденциальных вопросах (PRA), другой — на поведении и вопросах рынка (FCA).</p>
+  <p class="para">При этом <strong>FCA также отвечает за пруденциальное регулирование</strong> всех фирм, <strong>не регулируемых PRA</strong> (так называемые <strong>solo-regulated firms</strong> — управляющие активами, брокеры).</p>
+
+  <div class="schema">
+    <div class="schema-title">Модель twin peaks — наглядно</div>
+ДВЕ КАТЕГОРИИ ФИРМ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DUAL-REGULATED FIRMS
+Банки, строительные общества, кредитные союзы,
+страховщики, крупные инвестиционные банки
+↓ ↓
+PRA (пруденциальный) + FCA (поведенческий)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SOLO-REGULATED FIRMS
+Управляющие активами, брокеры, IFA,
+ипотечные брокеры, CMC
+↓
+Только FCA
+(и поведенческий, и пруденциальный)
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> FCA — роль и охват</div>
+  <p class="para">FCA отвечает за:</p>
+  <ul class="bullet">
+    <li>Защиту <strong>потребителей</strong> финансовых услуг</li>
+    <li>Поддержание <strong>стабильности</strong> отрасли</li>
+    <li>Содействие <strong>здоровой конкуренции</strong> между поставщиками финансовых услуг</li>
+    <li>Является <strong>единственным ответственным</strong> за авторизацию и надзор за всеми финансовыми институтами, <strong>не регулируемыми PRA</strong> — включая посредников и инвестиционные биржи</li>
+    <li>Наделён полномочиями <strong>расследовать и преследовать</strong> инсайдерскую торговлю и манипуляции рынком</li>
+    <li>Действует как <strong>Listing Authority</strong> для Великобритании (UKLA)</li>
+    <li>Курирует <strong>Financial Ombudsman Service (FOS)</strong></li>
+    <li>Совместно с PRA курирует <strong>Financial Services Compensation Scheme (FSCS)</strong></li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> PRA — роль и охват</div>
+  <p class="para"><strong>PRA сфокусирован</strong> на пруденциальном регулировании <strong>банков, строительных обществ, кредитных союзов, страховщиков и крупных инвестиционных фирм</strong>. Цель — содействовать <strong>безопасности и устойчивости</strong> этих фирм, что в свою очередь <strong>снижает ущерб для британской финансовой системы</strong>.</p>
+  <p class="para">После <strong>Financial Services Act 2016</strong> PRA стал <strong>частью Bank of England</strong> — микропруденциальный надзор за институтами был включён в сферу ответственности Банка Англии через создание <strong>Prudential Regulation Committee (PRC)</strong>.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> FCA — финансовая и организационная независимость</div>
+  <p class="para">Оба ведомства — FCA и PRA — <strong>полностью финансируются за счёт взносов регулируемых ими фирм</strong>. Они самостоятельно устанавливают размер взносов и создают правила в рамках своих полномочий. Это обеспечивает <strong>операционную независимость от государственного финансирования</strong>.</p>
+
+  <div class="info-box">
+    <div class="ib-title">FCA — частная компания</div>
+    FCA является <strong>частной компанией</strong> с особым статусом, позволяющим не использовать слово «limited» в названии. FCA <strong>подотчётна</strong> Правительству Великобритании за выполнение своих функций — через <strong>HM Treasury</strong>. PRA, напротив, не подотчётна напрямую никакому органу правительства, однако отвечает перед Парламентом через <strong>House of Commons Treasury Committee</strong> — через Bank of England.
+  </div>
+
+  <div class="example-box">
+    <div class="eb-title">Примеры распределения фирм</div>
+    <strong>Barclays Bank:</strong> deposit-taker + инвестиционный банк → <strong>dual-regulated</strong>. PRA проверяет достаточность капитала; FCA следит за продажами продуктов розничным клиентам.<br><br>
+    <strong>Schroders</strong> (управляющий активами): не deposit-taker, не страховщик → <strong>solo-regulated</strong> FCA (и поведенческий, и пруденциальный).<br><br>
+    <strong>AXA UK</strong> (страховщик): страховая компания → <strong>dual-regulated</strong>. PRA проверяет коэффициенты платёжеспособности; FCA следит за продажами полисов.<br><br>
+    <strong>Небольшой IFA</strong> (10 сотрудников): <strong>solo-regulated</strong> FCA.
+  </div>
+</div>
+
+<!-- 1.2 Statutory objectives -->
+<div class="section-card" id="s12">
+  <div class="section-num">1.2</div>
+  <h2 class="section-title">Statutory Objectives — цели FCA и PRA</h2>
+
+  <p class="para">Statutory objectives (законодательные цели) — это <strong>цели, установленные законом</strong> (FSMA с поправками), которые регулятор обязан реализовывать в своей работе. Это не абстрактные лозунги — это <strong>юридически обязывающие</strong> цели, по которым регулятор отчитывается и которые могут быть оспорены в суде.</p>
+
+  <div class="sub-title" id="fca-obj"><span class="sub-num">1.2.1</span> FCA — 1 стратегическая + 3 операционные цели</div>
+  <p class="para">У FCA есть <strong>одна стратегическая цель</strong> и <strong>три операционные цели</strong>, закреплённые в Financial Services Act 2012.</p>
+
+  <div class="schema">
+    <div class="schema-title">Структура целей FCA</div>
+СТРАТЕГИЧЕСКАЯ (×1)
+Ensuring that relevant markets function well
+(Обеспечение нормального функционирования соответствующих рынков)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ОПЕРАЦИОННЫЕ (×3)
+(1) Consumer protection — защита потребителей
+(2) Integrity — целостность финансовой системы Великобритании
+(3) Effective competition — эффективная конкуренция
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ВТОРИЧНАЯ (с FSMA 2023)
+International competitiveness + growth
+(Международная конкурентоспособность + рост)
+  </div>
+
+  <p class="para"><strong>Стратегическая цель FCA:</strong> «Ensuring that the relevant markets function well» — обеспечивать нормальное функционирование соответствующих рынков.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Операционная цель 1: Consumer Protection (Защита потребителей)</div>
+  <p class="para">Consumer protection objective — <strong>«securing an appropriate degree of protection for consumers»</strong> (обеспечение надлежащей степени защиты потребителей).</p>
+  <p class="para">Ключевое слово — <strong>«appropriate»</strong> (надлежащий). Это <strong>не означает предотвращения любых убытков</strong> потребителей. Определяя, что является «надлежащим» уровнем защиты, FCA <strong>обязана принимать во внимание</strong>:</p>
+  <ul class="bullet">
+    <li><strong>Различную степень риска</strong> разных видов инвестиций</li>
+    <li><strong>Различный уровень опыта и экспертизы</strong> потребителей</li>
+    <li>Потребность потребителей в <strong>консультации и точной информации</strong></li>
+    <li>Общий принцип, согласно которому потребители <strong>должны нести часть ответственности</strong> за свои решения</li>
+  </ul>
+
+  <div class="warn-box">
+    <div class="wb-title">Типичная ошибка на экзамене</div>
+    Ответ «FCA обязана предотвратить любые убытки потребителей» — <strong>неверный</strong>. Consumer protection — это <strong>надлежащая степень</strong> защиты, а не абсолютная. Потребители <strong>разделяют ответственность</strong> за свои решения.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Операционная цель 2: Integrity (Целостность)</div>
+  <p class="para">Integrity objective — <strong>«protecting and enhancing the integrity of the UK financial system»</strong> (защита и укрепление целостности финансовой системы Великобритании). Целостность финансовой системы включает <strong>6 элементов</strong>:</p>
+  <ul class="bullet">
+    <li>Надёжность, стабильность и устойчивость (soundness, stability, resilience)</li>
+    <li>Система не используется в целях, связанных с финансовыми преступлениями</li>
+    <li>На неё не влияет поведение, представляющее собой манипуляции рынком (market abuse)</li>
+    <li>Упорядоченная работа финансовых рынков (orderly operation)</li>
+    <li>Надёжность и прозрачность процесса ценообразования на этих рынках</li>
+    <li>Надлежащий характер правил листинга (listing rules)</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Операционная цель 3: Competition (Конкуренция)</div>
+  <p class="para">Competition objective — <strong>«promoting effective competition in the interests of consumers»</strong> (содействие эффективной конкуренции в интересах потребителей) на рынках регулируемых финансовых услуг. При реализации этой цели FCA может принимать во внимание:</p>
+  <ul class="bullet">
+    <li>Потребности различных категорий потребителей — включая <strong>их потребность в информации</strong> для осознанного выбора</li>
+    <li>Лёгкость, с которой потребители могут <strong>сменить поставщика услуг</strong> (switching)</li>
+    <li>Лёгкость <strong>входа на рынок для новых участников</strong></li>
+    <li>В какой мере конкуренция <strong>стимулирует инновации</strong></li>
+  </ul>
+
+  <div class="example-box">
+    <div class="eb-title">Конкуренционная цель на практике</div>
+    FCA запустила инициативу Open Banking — обязав крупнейшие девять банков предоставлять данные счетов финтех-стартапам через API. Это <strong>содействует конкуренции</strong>: упрощает вход на рынок для новых участников + облегчает переключение потребителей на лучшие продукты + стимулирует инновации. Прямая реализация competition objective.
+  </div>
+</div>
+
+<!-- PRA objectives -->
+<div class="section-card" id="pra-obj">
+  <div class="section-num">1.2.2</div>
+  <h2 class="section-title">PRA — Safety and Soundness + Insurance Objective</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Общая цель PRA</div>
+  <p class="para">PRA General Objective: <strong>«Promoting the safety and soundness of PRA-authorised persons»</strong> — содействие безопасности и устойчивости лиц, авторизованных PRA.</p>
+  <p class="para">Эта общая цель реализуется <strong>прежде всего</strong> через:</p>
+  <ul class="bullet">
+    <li>Стремление обеспечить, чтобы деятельность PRA-авторизованных лиц вёлась <strong>без причинения ущерба стабильности финансовой системы Великобритании</strong></li>
+    <li>Стремление <strong>минимизировать негативные последствия</strong>, которые может иметь банкротство PRA-авторизованного лица для стабильности финансовой системы</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Insurance objective</div>
+  <p class="para">PRA также имеет <strong>insurance objective</strong> (страховую цель), относящуюся исключительно к <em>заключению или исполнению договоров страхования в качестве принципала</em> — в той мере, в которой это является PRA-регулируемой деятельностью. Цель: <strong>«contributing to securing an appropriate degree of protection for those who are or may become policyholders»</strong> (содействие обеспечению надлежащей степени защиты существующих и потенциальных страхователей).</p>
+
+  <div class="info-box">
+    <div class="ib-title">Почему страхование выделено отдельно</div>
+    Страховщики отличаются от банков. Банкротство банка — это немедленный стресс для вкладчиков. Банкротство страховщика происходит медленнее — но с гораздо более длинными временными хвостами (договор страхования жизни может иметь срок 40–50 лет). Именно поэтому у PRA есть <strong>отдельная страховая цель</strong> — не «безопасность и устойчивость», а защита страхователей.
+  </div>
+</div>
+
+<!-- Secondary objective -->
+<div class="section-card" id="secondary">
+  <div class="section-num">1.2.3</div>
+  <h2 class="section-title">Secondary Objective (FSMA 2023) — международная конкурентоспособность</h2>
+
+  <p class="para">После вступления в силу <strong>FSMA 2023</strong> PRA и FCA получили новую <strong>secondary objective</strong>:</p>
+
+  <div class="info-box">
+    <div class="ib-title">Secondary Objective</div>
+    «Facilitate the international competitiveness of the UK economy and its medium-to-long-term growth (subject to international standards)» — содействовать международной конкурентоспособности экономики Великобритании и её среднесрочному и долгосрочному росту (с учётом международных стандартов).
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Что означает «secondary» (вторичная)</div>
+  <p class="para">FCA <strong>прямо указала</strong>, что новая цель будет применяться <strong>только в рамках реализации основных операционных целей</strong> (защита потребителей, целостность рынка, конкуренция). Иными словами, secondary objective <strong>не отменяет</strong> первичные. Если действие улучшает международную конкурентоспособность, но наносит ущерб защите потребителей — оно не предпринимается.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Оговорка «subject to international standards»</div>
+  <p class="para">Фраза <strong>«subject to international standards»</strong> означает, что FCA <strong>не будет предпринимать действий или разрабатывать правила</strong>, которые наносят ущерб репутации или позиции Великобритании в международном финансовом сообществе. То есть «конкурентоспособность» не может означать гонку к снижению стандартов — опускать регуляторную планку ради конкурентоспособности недопустимо.</p>
+
+  <div class="example-box">
+    <div class="eb-title">Secondary objective на практике</div>
+    FCA рассматривает правило, которое <em>возможно</em> немного улучшает защиту потребителей, но создаёт «gold-plating» (избыточное регулирование) сверх стандартов ЕС и делает Великобританию менее привлекательной для международных фирм. В рамках secondary objective FCA <em>может</em> не принимать это правило, если достаточный уровень защиты обеспечивается без излишней нагрузки.
+  </div>
+</div>
+
+<!-- Accountability -->
+<div class="section-card" id="accountability">
+  <div class="section-num">1.2.4</div>
+  <h2 class="section-title">Подотчётность — 4 механизма</h2>
+
+  <p class="para">Цели FCA также обеспечивают определённую степень <strong>подотчётности</strong>. Четыре механизма:</p>
+  <ul class="bullet">
+    <li><strong>Annual report</strong> — ежегодный отчёт FCA Казначейству содержит оценку того, насколько успешно FCA реализует свои statutory objectives. Отчёт изучается различными парламентскими комитетами.</li>
+    <li><strong>Rules</strong> — FCA обязана <strong>показывать, как принимаемые ею правила соотносятся с её statutory objectives</strong>. Нельзя просто издать правило без обоснования.</li>
+    <li><strong>Judicial review</strong> — если FCA <strong>не принимает во внимание цели</strong> или <strong>неверно их трактует</strong>, это может быть оспорено в судебном порядке.</li>
+    <li><strong>Regulatory failure</strong> — FCA и PRA будут привлечены к ответственности, если нарушения целей произошли или усугубились вследствие <strong>серьёзного просчёта со стороны самого регулятора</strong>.</li>
+  </ul>
+
+  <div class="exam-box">
+    <div class="xb-title">Несмотря на 4 механизма, FCA остаётся операционно независимой</div>
+    FCA отчитывается, но операционно <strong>независима от правительства</strong>. Казначейство не может диктовать политику или вмешиваться в отдельные решения. Эта независимость подкреплена <strong>независимым финансированием</strong> (взносы фирм, а не налогоплательщики).
+  </div>
+</div>
+
+<!-- Supervision -->
+<div class="section-card" id="supervision">
+  <div class="section-num">1.2.5</div>
+  <h2 class="section-title">Надзор — как регулятор наблюдает</h2>
+
+  <p class="para">В соответствии с FSMA соответствующий регулятор (FCA и/или PRA) <strong>обязан поддерживать механизмы надзора за соблюдением требований</strong>, предъявляемых к авторизованным лицам. Подход к надзору должен <strong>обеспечивать достижение statutory objectives</strong>.</p>
+
+  <p class="para"><strong>Надзорные усилия FCA направлены на:</strong></p>
+  <ul class="bullet">
+    <li><strong>Поведение как FCA-авторизованных, так и PRA-авторизованных фирм</strong></li>
+    <li>Плюс <strong>пруденциальное регулирование</strong> авторизованных фирм, не находящихся в прямом надзоре PRA</li>
+  </ul>
+  <p class="para"><strong>PRA осуществляет надзор за пруденциальными аспектами</strong> фирм, которые она непосредственно авторизует.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> FCA Mission: Approach to Supervision (2019)</div>
+  <p class="para">В <strong>2019 году</strong> FCA опубликовала документ <strong>«FCA Mission: Approach to Supervision»</strong>, в котором изложены <strong>восемь принципов надзора</strong> и модель надзора, основанная на <strong>3 типах работы</strong>:</p>
+
+  <table class="comp-table">
+    <tr><th>Тип</th><th>Что включает</th></tr>
+    <tr><td><strong>Proactive (Проактивный)</strong></td><td>Превентивное выявление рисков причинения ущерба путём анализа фирм и портфелей. Включает анализ бизнес-модели и изучение факторов культуры</td></tr>
+    <tr><td><strong>Reactive (Реактивный)</strong></td><td>Реагирование на возникающие или уже возникшие проблемы — чтобы <strong>предотвратить нарастание ущерба</strong></td></tr>
+    <tr><td><strong>Thematic (Тематический)</strong></td><td>Более широкая диагностическая или корректирующая работа, когда фактический или потенциальный ущерб затрагивает <strong>несколько фирм</strong></td></tr>
+  </table>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Conduct Risk и FTOC</div>
+  <p class="para">FCA не даёт <strong>точного определения «conduct risk»</strong>. В широком смысле conduct risk — это <strong>риски, которые поведение авторизованных фирм и их сотрудников представляет для клиентов и целостности финансовых рынков</strong>, а также риск того, что поведение фирм приведёт к <strong>неблагоприятным исходам для потребителя</strong>.</p>
+  <p class="para">Концепция <strong>Treating Customers Fairly (TCF)</strong> и её <strong>6 принципов</strong> была введена в <strong>2006 году</strong>. С тех пор TCF переименован в <strong>«Fair Treatment of Customers» (FTOC)</strong> — он закрепляет потребительские исходы, которые FCA считает ключевыми в своих ожиданиях от фирм.</p>
+</div>
+
+<!-- 1.3 Rule-making -->
+<div class="section-card" id="s13">
+  <div class="section-num">1.3</div>
+  <h2 class="section-title">Rule-Making Powers — Part 9A FSMA</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Источник полномочий</div>
+  <p class="para"><strong>Part 9A FSMA</strong> наделяет FCA полномочиями издавать правила, <strong>юридически обязательные для авторизованных фирм</strong> в части регулируемой деятельности — а также деятельности, которая <strong>не является регулируемой</strong>. Такие правила необходимы или целесообразны для FCA в целях реализации одной или нескольких её операционных целей.</p>
+  <p class="para"><strong>PRA обладает аналогичными rule-making powers</strong>; однако её полномочия <strong>распространяются только на PRA-авторизованных лиц</strong>.</p>
+
+  <div class="sub-title" id="handbook"><span class="sub-num">▸</span> FCA Handbook — три вида положений</div>
+  <p class="para">FCA Handbook (Справочник FCA) содержит три категории положений:</p>
+
+  <table class="comp-table">
+    <tr><th>Категория</th><th>Обозначение</th><th>Суть</th></tr>
+    <tr><td><strong>Rules (Правила)</strong></td><td>«R»</td><td>Юридически обязательны. Нарушение = дисциплинарные санкции</td></tr>
+    <tr><td><strong>Guidance (Руководство)</strong></td><td>«G»</td><td>Не обязательны юридически, но показывают ожидаемый путь соответствия правилам</td></tr>
+    <tr><td><strong>Evidential provisions (Доказательные положения)</strong></td><td>«E»</td><td>Соблюдение → презумпция выполнения связанного правила; несоблюдение → необходимо обосновать иное</td></tr>
+  </table>
+
+  <div class="info-box">
+    <div class="ib-title">Важный нюанс про guidance</div>
+    Guidance — не закон, но игнорировать его рискованно. Если фирма отступила от guidance и это привело к нарушению правила, регулятор будет исходить из того, что фирма нарушила правило. Фирма должна быть готова обосновать альтернативный подход.
+  </div>
+</div>
+
+<!-- Summary Section 1 -->
+<div class="summary-card" id="sum1">
+  <div class="summary-title">📋 Итоговое резюме — Section 1</div>
+  <ul>
+    <li><strong>FSMA 2000</strong> — основной закон о финансовых услугах в Великобритании. Вступил в силу в 2001 году. General prohibition (Section 19) — уголовная ответственность за регулируемую деятельность без авторизации.</li>
+    <li><strong>FS Act 2012</strong> → разделил FSA на FCA + PRA + FPC. Вступил в силу в апреле 2013 года.</li>
+    <li><strong>FSMA 2023</strong> → отмена retained EU law, secondary objective (конкурентоспособность + рост), «Smarter Regulatory Framework».</li>
+    <li><strong>Twin peaks</strong>: dual-regulated фирмы (банки, страховщики) — PRA + FCA; solo-regulated (управляющие, брокеры) — только FCA.</li>
+    <li><strong>FCA</strong>: 1 стратегическая цель (рынки функционируют нормально) + 3 операционные (защита потребителей / целостность / конкуренция) + secondary objective (FSMA 2023).</li>
+    <li><strong>«Appropriate» protection</strong> — не абсолютная. Потребители несут часть ответственности за свои решения.</li>
+    <li><strong>PRA</strong>: safety and soundness + insurance objective (защита страхователей). С 2016 — часть Bank of England (PRC).</li>
+    <li><strong>Подотчётность FCA</strong>: annual report / rules justification / judicial review / regulatory failure.</li>
+    <li><strong>FCA независима</strong> от правительства в операционном плане; финансируется взносами фирм.</li>
+    <li><strong>Надзор FCA (2019)</strong>: proactive / reactive / thematic.</li>
+    <li><strong>Conduct risk</strong>: риски для клиентов и рынков от поведения фирм. FTOC (ранее TCF) — с 2006 года.</li>
+    <li><strong>Rule-Making (Part 9A FSMA)</strong>: FCA издаёт rules (R) + guidance (G) + evidential provisions (E). PRA — аналогично, только для PRA-авторизованных.</li>
+  </ul>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 2
+     ══════════════════════════════════════════════════════════ -->
+
+</div>
+</body>
+</html>

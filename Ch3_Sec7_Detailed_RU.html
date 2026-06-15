@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 3, Section 7 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 3</div>
+  <div class="app-title">Chapter 3, Section 7 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Fraud and Economic Crime · ECCTA · Syllabus 3.7 · CISI V33</div>
+</div>
+<div class="screen">
+
+<div class="intro-card"><div class="intro-title">О чём эта секция?</div><div class="intro-text">Section 7 охватывает <strong>ECCTA (Economic Crime and Corporate Transparency Act)</strong> — новое корпоративное правонарушение «<strong>failure to prevent fraud</strong>», вступившее в силу <strong>1 сентября 2025</strong>. Структура зеркалирует Bribery Act s.7: строгая ответственность + защита «разумных процедур». Применяется только к <strong>крупным организациям</strong> (2 из 3 критериев). 1–2 вопроса на экзамене.</div></div>
+
+<div class="section-card"><div class="section-num">7.1</div><h2 class="section-title">ECCTA — Обзор</h2>
+<p class="para">ECCTA вводит: новую регуляторную цель в Legal Services Act 2007 / реформы Companies House / реформы злоупотребления limited partnerships / расширенные полномочия по изъятию криптоактивов / новое правонарушение failure to prevent fraud / меры против <strong>SLAPPs</strong> (Strategic Lawsuits Against Public Participation — попытки заглушить разоблачителей/журналистов).</p></div>
+
+<div class="section-card"><div class="section-num">7.2</div><h2 class="section-title">Failure to Prevent Fraud — Новое корпоративное правонарушение</h2>
+<p class="para">Вступило в силу <strong>1 сентября 2025</strong>. Организация несёт ответственность, если связанное лицо (сотрудник/агент/дочерняя компания) совершает мошенничество с намерением принести выгоду организации, и организация <strong>не имела разумных процедур предотвращения мошенничества</strong>.</p>
+<div class="sub-title"><span class="sub-num">▸</span> Сфера применения — только КРУПНЫЕ организации</div>
+<table class="comp-table"><tr><th>Критерий</th><th>Порог</th></tr>
+<tr><td>Оборот</td><td>> <strong>£36 миллионов</strong></td></tr>
+<tr><td>Общие активы (balance sheet)</td><td>> <strong>£18 миллионов</strong></td></tr>
+<tr><td>Число сотрудников</td><td>> <strong>250 сотрудников</strong></td></tr></table>
+<p class="para">Должны соответствовать <strong>минимум 2 из 3 критериев</strong>. МСП (SMEs) освобождены — в отличие от Bribery Act s.7, который применяется ко всем.</p>
+<div class="info-box"><div class="ib-title">Требование выгоды + Единственная защита</div>
+Выгода может быть финансовой или нефинансовой. Организация <strong>не должна фактически получить выгоду</strong> — достаточно намерения. Правонарушение совершено до получения какой-либо выгоды.<br>
+<strong>Единственная защита</strong> = «разумные процедуры предотвращения мошенничества».</div>
+<div class="sub-title"><span class="sub-num">▸</span> Базовые преступления мошенничества (Schedule 13)</div>
+<p class="para">Fraud Act 2006, Section 1 — 3 способа мошенничества: (1) <strong>Fraud by false representation</strong> — нечестное ложное представление с целью получения прибыли/причинения убытка; (2) <strong>Fraud by failing to disclose</strong> — нечестное неисполнение обязанности раскрытия при наличии правовой обязанности; (3) <strong>Fraud by abuse of position</strong> — нечестное злоупотребление позицией, предполагающей защиту финансовых интересов другого лица. Плюс: участие в мошенническом бизнесе / получение услуг обманным путём / мошенничество с государственными доходами / фальсификация учёта / ложные заявления директоров / мошенническая торговля. <strong>Отмывание денег — НЕ является правонарушением в сфере мошенничества</strong> (отдельный режим POCA).</p></div>
+
+<div class="section-card"><div class="section-num">7.3</div><h2 class="section-title">6 принципов Home Office</h2>
+<p class="para">Аналогичны 6 принципам Bribery Act: (1) Приверженность руководства / (2) Оценка рисков / (3) Пропорциональные процедуры / (4) Должная осмотрительность / (5) Коммуникация и обучение / (6) Мониторинг и пересмотр. Ключевое отличие ECCTA vs Bribery Act: <strong>Bribery Act = все организации; ECCTA = только крупные</strong>.</p></div>
+
+<div class="summary-card"><div class="summary-title">📋 Итоговое резюме — Ch3 Section 7</div><ul>
+<li><strong>ECCTA Failure to Prevent Fraud:</strong> вступило в силу <strong>1 сентября 2025</strong>. Только для КРУПНЫХ (2 из 3): оборот >£36M / активы >£18M / >250 сотрудников. Связанное лицо совершает мошенничество с намерением выгоды → организация виновна без разумных процедур.</li>
+<li>Выгода = финансовая или нефинансовая; не нужно реально получить. Единственная защита = разумные процедуры.</li>
+<li><strong>Базовые преступления:</strong> Fraud Act 2006 s.1 (3 способа: false representation / failing to disclose / abuse of position) + мошеннический бизнес + получение услуг обманом + мошенничество с доходами + фальсификация учёта + ложные заявления директоров + мошенническая торговля. ML — НЕ мошенничество.</li>
+<li><strong>6 принципов Home Office</strong> (аналог Bribery Act). ECCTA = только крупные; Bribery Act = все.</li>
+</ul></div>
+
+</div>
+</body>
+</html>

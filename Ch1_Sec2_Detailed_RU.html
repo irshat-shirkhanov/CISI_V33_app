@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 1, Section 2 — Detailed Deep Dive (RU)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#4338CA;--primary-l:#E0E7FF;--primary-d:#3730A3;--primary-vd:#1E1B4B;--accent:#7C3AED;--accent-l:#EDE9FE;--accent-d:#5B21B6;--emerald:#10B981;--emerald-l:#D1FAE5;--emerald-d:#047857;--amber:#B45309;--amber-l:#FEF3C7;--amber-d:#78350F;--rose:#BE123C;--rose-l:#FFE4E6;--rose-d:#881337;--slate:#64748B;--slate-l:#F1F5F9;--slate-m:#CBD5E1;--slate-d:#334155;--ink:#0F172A;--muted:#475569;--bg:#F5F3FF;--card:#fff;--radius:12px;--shadow:0 2px 10px rgba(67,56,202,.08)}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+.app-header{background:linear-gradient(135deg,var(--primary-vd),var(--accent));padding:1.5rem 1.5rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,27,75,.25)}
+.chap-badge{display:inline-block;background:rgba(255,255,255,.18);color:#fff;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;letter-spacing:.12em;margin-bottom:.35rem}
+.app-title{color:#fff;font-size:1.2rem;font-weight:700;line-height:1.3}
+.app-sub{color:var(--primary-l);font-size:.78rem;margin-top:.25rem}
+.screen{padding:1.6rem 1.2rem 4rem;max-width:900px;margin:0 auto}
+.intro-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem 1.6rem;margin-bottom:1.4rem;border-left:4px solid var(--primary)}
+.intro-title{font-size:1.08rem;font-weight:700;color:var(--primary-d);margin-bottom:.5rem}
+.intro-text{font-size:.92rem;color:var(--muted)}
+.section-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem 1.6rem 1.4rem;margin-bottom:1.4rem;border:1px solid rgba(67,56,202,.08)}
+.section-num{display:inline-block;background:var(--primary);color:#fff;font-size:.72rem;font-weight:700;padding:.22rem .65rem;border-radius:20px;margin-bottom:.55rem;letter-spacing:.04em}
+.section-title{font-size:1.22rem;font-weight:700;color:var(--primary-vd);margin-bottom:1rem;line-height:1.3}
+.sub-title{font-size:1.02rem;font-weight:700;color:var(--primary-d);margin:1.3rem 0 .6rem;padding-bottom:.3rem;border-bottom:2px solid var(--primary-l)}
+.sub-title .sub-num{color:var(--accent);font-weight:700;margin-right:.35rem}
+.para{font-size:.93rem;color:var(--ink);margin-bottom:.85rem}
+.para strong{color:var(--primary-d);font-weight:600}
+.para em{font-style:italic;color:var(--accent-d)}
+ul.bullet{margin:.5rem 0 1rem 1.2rem}
+ul.bullet li{margin-bottom:.4rem;font-size:.92rem;color:var(--ink)}
+.info-box{background:var(--primary-l);border-left:4px solid var(--primary);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.info-box .ib-title{font-weight:700;color:var(--primary-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box{background:var(--accent-l);border-left:4px solid var(--accent);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.example-box .eb-title{font-weight:700;color:var(--accent-d);margin-bottom:.35rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.example-box .eb-title::before{content:"💡 "}
+.warn-box{background:var(--amber-l);border-left:4px solid var(--amber);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.9rem}
+.warn-box .wb-title{font-weight:700;color:var(--amber-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.warn-box .wb-title::before{content:"⚠️ "}
+.exam-box{background:var(--emerald-l);border-left:4px solid var(--emerald);border-radius:8px;padding:.85rem 1.1rem;margin:.9rem 0;font-size:.88rem}
+.exam-box .xb-title{font-weight:700;color:var(--emerald-d);margin-bottom:.3rem;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+.exam-box .xb-title::before{content:"🎯 "}
+.schema{background:linear-gradient(135deg,#FAFAFC,#F1F5F9);border:1.5px dashed var(--primary-l);border-radius:10px;padding:1.1rem 1rem;margin:1rem 0;text-align:center;font-family:"SF Mono",Consolas,Monaco,monospace;font-size:.82rem;line-height:1.7;color:var(--muted);overflow-x:auto}
+.schema-title{font-family:system-ui,sans-serif;font-weight:700;color:var(--primary-vd);font-size:.85rem;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em}
+.comp-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.86rem;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(67,56,202,.08)}
+.comp-table th{background:var(--primary-vd);color:#fff;padding:.65rem .8rem;text-align:left;font-weight:600;font-size:.83rem}
+.comp-table td{padding:.6rem .8rem;border-top:1px solid var(--slate-m);vertical-align:top}
+.comp-table tr:nth-child(even) td{background:var(--slate-l)}
+.summary-card{background:linear-gradient(135deg,var(--primary-vd),var(--accent));color:#fff;border-radius:var(--radius);padding:1.5rem 1.6rem;margin-top:2rem;box-shadow:var(--shadow)}
+.summary-title{font-size:1.1rem;font-weight:700;margin-bottom:.8rem}
+.summary-card ul{margin:.4rem 0 0 1.2rem}
+.summary-card li{margin-bottom:.5rem;font-size:.9rem}
+.summary-card strong{color:#FEF3C7}
+.toc{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.3rem;margin-bottom:1.4rem;border:1px solid var(--slate-m)}
+.toc-title{font-weight:700;color:var(--primary-vd);font-size:.88rem;margin-bottom:.55rem;text-transform:uppercase;letter-spacing:.05em}
+.toc-list{list-style:none;padding:0}
+.toc-list li{padding:.25rem 0;font-size:.88rem}
+.toc-list a{color:var(--primary-d);text-decoration:none;font-weight:500}
+.toc-list a:hover{color:var(--accent);text-decoration:underline}
+.number-card{display:inline-block;background:var(--amber-l);color:var(--amber-d);font-weight:700;padding:.1rem .55rem;border-radius:5px;font-size:.88rem;border:1.5px solid var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="chap-badge">CHAPTER 1</div>
+  <div class="app-title">Chapter 1, Section 2 — Detailed Deep Dive (RU)</div>
+  <div class="app-sub">Principles for Businesses · Syllabus 1.2 · CISI V33</div>
+</div>
+
+<div class="screen">
+
+<div class="intro-card">
+  <div class="intro-title">О чём эта секция?</div>
+  <div class="intro-text">
+    Section 2 — это <strong>моральный кодекс FCA</strong> для всех авторизованных фирм. <strong>12 Principles for Businesses (PRIN)</strong> — правила высокого уровня: краткие, абстрактные, но <strong>юридически обязательные</strong>. Нарушение любого Принципа влечёт дисциплинарные санкции. В 2023 году FCA добавила <strong>Principle 12 — Consumer Duty</strong>, существенно повысив планку защиты потребителей. В этой секции также рассматривается <strong>Fair Treatment of Customers (FTOC)</strong>: что применяется к фирмам, <strong>находящимся вне</strong> сферы Consumer Duty. На экзамене ~2–3 вопроса. Ключевое различие: <strong>Consumer Duty (4 outcomes) vs FTOC (6 outcomes)</strong>.
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">Содержание секции</div>
+  <ul class="toc-list">
+    <li>→ <a href="#s21">2.1 12 Principles for Businesses</a></li>
+    <li>→ <a href="#s22">2.2 Consumer Duty — Principle 12</a></li>
+    <li>→ <a href="#scope-cd">Scope of Consumer Duty</a></li>
+    <li>→ <a href="#ccr">Cross-cutting rules — 3 правила</a></li>
+    <li>→ <a href="#outcomes">4 «хороших» исхода Consumer Duty</a></li>
+    <li>→ <a href="#cr6">Подотчётность — Conduct Rule 6</a></li>
+    <li>→ <a href="#s23">2.3 FTOC — Fair Treatment of Customers</a></li>
+    <li>→ <a href="#sum2">Итоговое резюме</a></li>
+  </ul>
+</div>
+
+<!-- 2.1 -->
+<div class="section-card" id="s21">
+  <div class="section-num">2.1</div>
+  <h2 class="section-title">12 Principles for Businesses — правила высокого уровня</h2>
+
+  <p class="para"><strong>Principles for Businesses (PRIN)</strong> являются <strong>юридически обязательными</strong> для всех авторизованных фирм. Если фирма нарушает какой-либо из Принципов, она <strong>несёт ответственность в виде дисциплинарных санкций</strong>. Это означает, что FCA может наказать фирму за нарушение Принципа <strong>даже если</strong> фирма технически не нарушила ни одного конкретного правила COBS или SYSC. Принципы — это высокоуровневый кодекс поведения <em>по существу</em>.</p>
+
+  <div class="info-box">
+    <div class="ib-title">Все 12 Принципов</div>
+    <strong>1 — Integrity (Честность):</strong> фирма ведёт бизнес добросовестно.<br>
+    <strong>2 — Skill, care and diligence (Умение, тщательность и усердие):</strong> фирма ведёт бизнес с должной квалификацией, тщательностью и усердием.<br>
+    <strong>3 — Management and control (Управление и контроль):</strong> фирма обеспечивает разумную организацию и эффективный контроль своей деятельности, с надлежащими системами управления рисками.<br>
+    <strong>4 — Financial prudence (Финансовая осмотрительность):</strong> фирма располагает достаточными финансовыми ресурсами.<br>
+    <strong>5 — Market conduct (Поведение на рынке):</strong> фирма соблюдает надлежащие стандарты поведения на рынке.<br>
+    <strong>6 — Customers' interests (Интересы клиентов):</strong> фирма должным образом учитывает интересы своих клиентов и обращается с ними справедливо.<br>
+    <strong>7 — Communications with clients (Коммуникации с клиентами):</strong> фирма общается с клиентами ясно, честно и без введения в заблуждение.<br>
+    <strong>8 — Conflicts of interest (Конфликты интересов):</strong> фирма справедливо управляет конфликтами — как между собой и клиентами, так и между разными клиентами.<br>
+    <strong>9 — Customers: relationships of trust (Отношения доверия):</strong> фирма принимает разумные меры для обеспечения пригодности своих рекомендаций и дискреционных решений для клиентов, вправе полагающихся на её суждение.<br>
+    <strong>10 — Clients' assets (Активы клиентов):</strong> фирма обеспечивает надлежащую защиту активов клиентов, когда несёт за них ответственность.<br>
+    <strong>11 — Relations with regulators (Отношения с регуляторами):</strong> фирма работает с регуляторами открыто и конструктивно, раскрывая PRA/FCA всё, о чём они вправе разумно ожидать уведомления.<br>
+    <strong>12 — Consumer Duty (Долг перед потребителем):</strong> фирма действует так, чтобы обеспечить хорошие исходы для розничных клиентов. Фирмам необходимо принимать во внимание характеристики и цели своих клиентов. Действие + <em>доказательства</em> того, что исходы достигаются.
+  </div>
+
+  <div class="warn-box">
+    <div class="wb-title">Principle 12 — новый с 2023 года</div>
+    Principle 12 — самый новый. Он был добавлен FCA в <strong>июле 2023 года</strong> в рамках инициативы Consumer Duty. До этого Принципов было 11.
+  </div>
+
+  <div class="exam-box">
+    <div class="xb-title">Что значит «юридически обязательный»</div>
+    PRIN — не мягкие рекомендации. Нарушение Принципа аналогично нарушению любого правила: может повлечь штрафы, публичное порицание, ограничения разрешения фирмы, персональные санкции против старших менеджеров.
+  </div>
+</div>
+
+<!-- 2.2 Consumer Duty -->
+<div class="section-card" id="s22">
+  <div class="section-num">2.2</div>
+  <h2 class="section-title">Consumer Duty — Principle 12 в деталях</h2>
+
+  <p class="para">Инициатива <strong>Consumer Duty</strong> включает:</p>
+  <ul class="bullet">
+    <li><strong>Principle (Principle 12)</strong> — высокоуровневое обязательство</li>
+    <li><strong>Rules</strong> — детальные правила в FCA Handbook</li>
+    <li><strong>Expected outcomes</strong> — 4 исхода, ожидаемых FCA</li>
+    <li><strong>Formal guidance</strong> — FG22/5 (Finalised Guidance)</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Цели и назначение</div>
+  <p class="para"><strong>Consumer Duty</strong> устанавливает <strong>более высокие и чёткие стандарты</strong> защиты потребителей в сфере финансовых услуг и требует от фирм <strong>ставить потребности клиентов на первое место</strong>. Плюс <strong>cross-cutting rules</strong> (сквозные правила), обеспечивающие большую ясность, + правила, касающиеся <strong>исходов</strong>, которых ожидает FCA.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Даты внедрения</div>
+  <table class="comp-table">
+    <tr><th>Этап</th><th>Дата</th></tr>
+    <tr><td>Правила вступают в силу для <strong>новых и существующих продуктов/услуг</strong></td><td>31 июля 2023</td></tr>
+    <tr><td>Правила вступают в силу для <strong>закрытых продуктов и услуг</strong> (только для существующих клиентов, новые инвестиции не принимаются, или продукт сворачивается)</td><td>31 июля 2024</td></tr>
+  </table>
+</div>
+
+<!-- Scope -->
+<div class="section-card" id="scope-cd">
+  <div class="section-num">2.2.1</div>
+  <h2 class="section-title">Scope of Consumer Duty — на кого распространяется</h2>
+
+  <p class="para">Consumer Duty распространяется на продукты и услуги, <strong>предлагаемые розничным клиентам</strong>. Определение охватывает:</p>
+  <ul class="bullet">
+    <li><strong>Consumer credit</strong> — включая Claims Management (CMCOB) и Funeral Plan (FPCOB)</li>
+    <li><strong>Deposit-taking (BCOBS)</strong> — для потребителей, микропредприятий, благотворительных организаций с оборотом <strong>&lt;£1M</strong> и физических лиц, действующих в качестве доверительных управляющих (вне своей торговой/деловой деятельности)</li>
+    <li><strong>Insurance (ICOBS)</strong> — <strong>но не перестрахование</strong></li>
+    <li><strong>Investments (COBS)</strong> — работа с клиентом, который <strong>не является профессиональным клиентом</strong>. Если клиент выбирает статус профессионального, Duty <strong>не применяется</strong> — но применяется к <strong>процессу определения</strong> статуса клиента</li>
+    <li><strong>Mortgages (MCOB)</strong> — регулируемые ипотечные кредиты входят в сферу действия. <strong>Нерегулируемые</strong> buy-to-let и коммерческое кредитование — нет</li>
+  </ul>
+
+  <div class="info-box">
+    <div class="ib-title">Потенциальные клиенты также в сфере действия</div>
+    Consumer Duty распространяется <strong>не только на существующих клиентов</strong>, но и на <strong>потенциальных клиентов</strong>. Это важно — фирма должна учитывать Duty уже на стадии маркетинга и таргетирования.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Оптовые фирмы — когда входят в сферу действия</div>
+  <p class="para"><strong>Wholesale firms (B2B)</strong> могут попасть в сферу действия, когда они <strong>потенциально могут влиять на розничных клиентов</strong> в цепочке дистрибуции — и их действия (при создании продуктов) могут <strong>определять или существенно влиять на исходы</strong> для розничных клиентов.</p>
+  <p class="para">Примеры «существенного влияния»:</p>
+  <ul class="bullet">
+    <li>Разработка или функционирование розничных продуктов/услуг — включая цену и ценность</li>
+    <li>Дистрибуция розничных продуктов/услуг</li>
+    <li>Подготовка и согласование коммуникаций для розничных клиентов</li>
+    <li>Поддержка клиентов в розничном сегменте</li>
+  </ul>
+  <p class="para">Consumer Duty применяется <strong>пропорционально</strong> — фирма, далёкая от розничных клиентов и не имеющая с ними прямых отношений, несёт <strong>ограниченные обязательства</strong>.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Исключения для wholesale</div>
+  <p class="para">Из Consumer Duty исключены:</p>
+  <ul class="bullet">
+    <li>Производство продуктов исключительно для wholesale (если они соответствуют определению «retail market business») — включая финансовые инструменты для торговли на регулируемых рынках</li>
+    <li>Деятельность в отношении <strong>нерозничных финансовых инструментов с минимальным номиналом £50 000</strong></li>
+    <li>Рыночная деятельность в отношении определённых инструментов, отвечающих установленным критериям</li>
+    <li>Страхование — крупные риски для коммерческих клиентов или риски вне Великобритании</li>
+    <li>Дистрибуция полисов группового страхования</li>
+    <li>Администрирование бенчмарков</li>
+  </ul>
+
+  <div class="number-card">Ключевая цифра — £50 000</div>
+  <p class="para" style="margin-top:.6rem">Исключение wholesale для нерозничных финансовых инструментов — <strong>минимальный номинал £50 000</strong>. Часто встречается на экзамене.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Principle 12 vs Principles 6 и 7</div>
+  <div class="info-box">
+    <div class="ib-title">Правило вытеснения (Displacement rule)</div>
+    Когда <strong>Principle 12 применяется</strong> (фирма входит в сферу Consumer Duty), <strong>Principles 6 и 7 НЕ применяются</strong> к услугам/продуктам, предоставляемым розничным клиентам. То есть P12 <strong>вытесняет</strong> P6 и P7 в отношении розничного сегмента. Фирмы, <strong>не подпадающие</strong> под Consumer Duty, продолжают соблюдать P6 и P7 (но не P12).
+  </div>
+
+  <div class="warn-box">
+    <div class="wb-title">Попытки обойти систему — недопустимы</div>
+    Фирмы <strong>не могут</strong> некорректно классифицировать продукт/услугу как «нерозничные» с целью избежать Consumer Duty и затем распространять их розничным клиентам. Это будет рассматриваться как нарушение.
+  </div>
+</div>
+
+<!-- Cross-cutting rules -->
+<div class="section-card" id="ccr">
+  <div class="section-num">2.2.2</div>
+  <h2 class="section-title">Cross-Cutting Rules — 3 универсальных правила</h2>
+
+  <p class="para"><strong>Cross-cutting rules</strong> (сквозные правила) — это 3 правила, которые распространяются на все 4 исхода. Фирмы обязаны:</p>
+
+  <div class="info-box">
+    <div class="ib-title">Правило 1 — Act in good faith (Действовать добросовестно)</div>
+    Стандарт поведения — <strong>честность, открытые и справедливые отношения</strong>. Действовать <strong>в соответствии с разумными ожиданиями</strong> розничных клиентов. Фирмы должны принимать это во внимание <strong>уже на стадии разработки</strong> продукта или услуги.
+  </div>
+
+  <div class="info-box">
+    <div class="ib-title">Правило 2 — Avoid foreseeable harm (Избегать предсказуемого вреда)</div>
+    Фирмы должны обеспечивать, чтобы розничные клиенты <strong>понимали и принимали присущие продуктам риски</strong>. Фирмы <strong>НЕ несут ответственности</strong> за защиту клиентов от всех предсказуемых рисков. Фирмы должны быть <strong>ясными и прозрачными</strong>.
+  </div>
+
+  <div class="info-box">
+    <div class="ib-title">Правило 3 — Enable and support (Содействовать и поддерживать)</div>
+    Фирмы должны <strong>содействовать достижению финансовых целей</strong> розничных клиентов. Фирмы <strong>не несут ответственности</strong> за самостоятельные решения и выбор клиентов. Фирмы должны быть <strong>ясными и прозрачными</strong> при предоставлении материалов и информации.
+  </div>
+
+  <div class="warn-box">
+    <div class="wb-title">Важный нюанс — «avoid foreseeable harm»</div>
+    Многие думают, что это <strong>абсолютная</strong> защита — фирма обязана предотвратить любой предсказуемый вред. Это <strong>не так</strong>. FCA прямо указала: фирмы <strong>НЕ несут ответственности за защиту клиентов от всех предсказуемых рисков</strong>. Клиенты сохраняют ответственность за свои решения. Фирмы обязаны быть <strong>ясными и прозрачными</strong> + помогать клиентам <strong>понимать</strong> риски.
+  </div>
+</div>
+
+<!-- 4 Outcomes -->
+<div class="section-card" id="outcomes">
+  <div class="section-num">2.2.3</div>
+  <h2 class="section-title">4 «хороших» исхода — структурные цели Consumer Duty</h2>
+
+  <div class="schema">
+    <div class="schema-title">4 исхода Consumer Duty</div>
+(1) Products and Services — Продукты и услуги
+(2) Price and Value — Цена и ценность
+(3) Consumer Understanding — Понимание потребителями
+(4) Consumer Support — Поддержка потребителей
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Исход 1: Products and Services (Продукты и услуги)</div>
+  <p class="para">FCA ожидает, что продукты и услуги <strong>будут разработаны с учётом потребностей и целей целевой группы</strong>. Consumer Duty взаимодействует с требованиями <strong>PROD (Product Intervention and Product Governance Sourcebook)</strong>.</p>
+  <p class="para"><strong>Product providers (производители):</strong></p>
+  <ul class="bullet">
+    <li>Несут ответственность за обеспечение того, чтобы продукт/услуга был разработан для <strong>конкретных потребностей или целей определённого целевого рынка</strong></li>
+    <li>Обязаны проводить <strong>регулярный анализ</strong> результатов продукта</li>
+  </ul>
+  <p class="para"><strong>Product distributors (дистрибьюторы):</strong></p>
+  <ul class="bullet">
+    <li>Несут ответственность за дистрибуцию/маркетинг, <strong>ориентированные на целевую аудиторию</strong></li>
+    <li>Обязаны принимать <strong>все разумные меры</strong>, чтобы продукт не предлагался клиентам <strong>за пределами целевого рынка</strong></li>
+  </ul>
+  <p class="para">В случае если в цепочке дистрибуции участвуют несколько фирм, каждая несёт ответственность за исход пропорционально своим возможностям влиять на проектирование, функционирование и дистрибуцию продукта.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Исход 2: Price and Value (Цена и ценность)</div>
+  <p class="para">FCA <strong>не регулирует ценообразование</strong>, но ожидает, что фирмы будут предлагать продукты/услуги, представляющие <strong>справедливую ценность</strong>. Ключевые моменты:</p>
+  <ul class="bullet">
+    <li><strong>Fair value</strong> не означает, что все розничные потребители достигают одинаковых исходов — те, кто сравнивает варианты, приобретают уверенность в ценности продукта</li>
+    <li>Фирмы <strong>не обязаны устанавливать одинаковые цены</strong> для новых и существующих клиентов — но должны <strong>демонстрировать</strong>, что любые скидки для новых клиентов <strong>ясно сообщены обеим группам</strong>, чтобы обе могли получить справедливую ценность</li>
+    <li>Цена представляет собой <strong>«справедливую» ценность</strong> для клиентов целевого рынка</li>
+    <li>Ценность определяется не только ценой: фирма должна обеспечивать <strong>соответствие между уплаченной ценой и выгодой, получаемой клиентом</strong></li>
+  </ul>
+
+  <div class="example-box">
+    <div class="eb-title">Fair value — это не самая низкая цена</div>
+    Фирма A продаёт базовый банковский счёт за £0/месяц. Фирма B продаёт премиальный счёт за £10/месяц с включённой страховкой путешествий, доступом в бизнес-залы аэропортов и мониторингом кредитной истории. <strong>Оба варианта могут представлять fair value</strong> — если выгоды премиального счёта соразмерны £10. Fair value — это про <strong>соответствие</strong> цены и пользы, а не про самую дешёвую опцию.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Исход 3: Consumer Understanding (Понимание потребителями)</div>
+  <p class="para">Фирмы должны <strong>коммуницировать с клиентами последовательно</strong>, чтобы те могли принимать <strong>осознанные решения</strong>. FCA ожидает, что фирмы будут предоставлять необходимую информацию:</p>
+  <ul class="bullet">
+    <li>В <strong>нужный момент</strong></li>
+    <li>В форме, которая <strong>ясна и легко воспринимается</strong></li>
+    <li>Позволяя клиентам <strong>понять и оценить</strong>: характеристики продуктов/услуг, вероятные затраты, связанные риски и выгоды, соответствие продуктов/услуг их финансовым потребностям</li>
+  </ul>
+  <p class="para">Фирмы должны <strong>принимать во внимание целевую аудиторию</strong> — использовать это при разработке маркетинговых материалов, мысленно <em>ставя себя на место</em> розничного клиента и проверяя, направлена ли информация на нужный уровень понимания.</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Исход 4: Consumer Support (Поддержка потребителей)</div>
+  <p class="para">Ожидается, что фирмы будут предоставлять <strong>надлежащий уровень обслуживания</strong>, отвечающий потребностям клиентов <strong>на протяжении всех отношений с ними</strong>.</p>
+  <ul class="bullet">
+    <li>Фирмы обязаны обеспечивать <strong>честность, ясность и отсутствие вводящих в заблуждение коммуникаций</strong></li>
+    <li>Фирмы должны предоставлять информацию в форме, <strong>понятной клиентам</strong></li>
+    <li>Фирмам необходимо понимать <strong>уровень финансовой грамотности</strong> целевой аудитории</li>
+  </ul>
+
+  <div class="example-box">
+    <div class="eb-title">Пример нарушения Consumer Support</div>
+    Фирма X делает процесс регистрации очень простым (онлайн за 5 минут), но для <strong>отмены подписки</strong> клиент должен звонить в рабочее время, ждать 30 минут и общаться с несколькими операторами. Это — <strong>нарушение Исхода 4 (Consumer Support) + сквозного правила «avoid foreseeable harm»</strong>. «Sludge practices» (намеренно осложнённые пути выхода) — одна из главных целей FCA в рамках Consumer Duty.
+  </div>
+</div>
+
+<!-- Conduct Rule 6 -->
+<div class="section-card" id="cr6">
+  <div class="section-num">2.2.4</div>
+  <h2 class="section-title">Подотчётность — Conduct Rule 6 + SM&CR</h2>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Новое Conduct Rule</div>
+  <p class="para">В рамках Consumer Duty FCA <strong>ввела новое Conduct Rule (SM&CR) для фирм, входящих в сферу действия Duty</strong>:</p>
+  <div class="info-box">
+    <div class="ib-title">Conduct Rule 6 (индивидуальное правило в рамках COCON)</div>
+    «You must act to deliver good outcomes for retail customers» — вы обязаны действовать так, чтобы обеспечивать хорошие исходы для розничных клиентов.
+  </div>
+  <p class="para">Если фирма <strong>НЕ</strong> входит в сферу Consumer Duty, <strong>Conduct Rule 6 не применяется</strong>. В этом случае продолжает применяться существующее <strong>Conduct Rule 4</strong> («treat customers fairly» — обращаться с клиентами справедливо).</p>
+
+  <div class="sub-title"><span class="sub-num">▸</span> Подотчётность старших менеджеров</div>
+  <p class="para">FCA привлекает <strong>старших менеджеров к ответственности</strong> через <strong>SM&CR</strong> за внедрение и соблюдение Consumer Duty на постоянной основе. Фирмы должны обеспечивать, чтобы старшие менеджеры <strong>чётко понимали, за что они отвечают</strong> и <strong>каким образом обеспечивается</strong> постоянное соблюдение Duty.</p>
+
+  <div class="warn-box">
+    <div class="wb-title">Consumer Duty «champion» — требование упразднено в феврале 2025 года</div>
+    Изначально FCA требовала назначения «чемпиона» Consumer Duty в Совете директоров. Это требование было <strong>упразднено в феврале 2025 года</strong>. Подотчётность старших менеджеров сохраняется в рамках стандартного SM&CR (например, через SMF16 или CEO). Не путать — чемпион сейчас <strong>НЕ требуется</strong>.
+  </div>
+</div>
+
+<!-- FTOC -->
+<div class="section-card" id="s23">
+  <div class="section-num">2.3</div>
+  <h2 class="section-title">FTOC — Fair Treatment of Customers</h2>
+
+  <p class="para"><strong>FTOC</strong> применяется к фирмам, <strong>находящимся ВНЕ сферы действия Consumer Duty</strong> — либо потому, что они не <strong>работают напрямую с розничными клиентами</strong> и не могут существенно влиять на их хорошие исходы; либо потому, что их продукты/услуги подпадают под <strong>исключения</strong> из Consumer Duty.</p>
+  <p class="para">Концепция справедливого обращения является сердцем регуляторной системы. Она выражена в <strong>Principle 6</strong> плюс важное правило поведения в бизнесе:</p>
+  <div class="info-box">
+    <div class="ib-title">Client's Best Interests Rule</div>
+    «A firm must act honestly, fairly and professionally in accordance with the best interests of its client» — фирма обязана действовать честно, справедливо и профессионально в соответствии с наилучшими интересами своего клиента. Это — <strong>«правило наилучших интересов клиента»</strong>.
+  </div>
+
+  <div class="sub-title"><span class="sub-num">▸</span> 6 исходов FTOC — запомнить обязательно</div>
+  <ul class="bullet">
+    <li>Потребители <strong>уверены</strong> в работе фирм, в корпоративной культуре которых <strong>справедливое обращение занимает центральное место</strong></li>
+    <li>Продукты/услуги, продаваемые на <strong>розничном рынке, разработаны для удовлетворения потребностей определённых потребительских групп</strong> и соответствующим образом ориентированы</li>
+    <li>Потребителям предоставляется <strong>ясная информация до, во время и после продажи</strong></li>
+    <li>Там, где потребители получают консультацию, она является <strong>пригодной</strong> и учитывает их обстоятельства</li>
+    <li>Продукты работают так, <strong>как фирмы давали основания ожидать</strong> потребителям</li>
+    <li>Потребители <strong>не сталкиваются с необоснованными барьерами после продажи</strong> для смены, переключения, подачи требования или жалобы</li>
+  </ul>
+
+  <div class="sub-title"><span class="sub-num">▸</span> FTOC vs Consumer Duty — ключевое различие</div>
+  <table class="comp-table">
+    <tr><th>Характеристика</th><th>FTOC</th><th>Consumer Duty</th></tr>
+    <tr><td>Применяется к</td><td>Фирмам ВНЕ сферы Consumer Duty</td><td>Фирмам В СФЕРЕ (розничные клиенты, регулируемая деятельность в Великобритании)</td></tr>
+    <tr><td>Принципы</td><td>Principle 6 + Principle 7</td><td>Principle 12 (вытесняет P6 и P7)</td></tr>
+    <tr><td>Исходы</td><td><strong>6 исходов</strong></td><td><strong>4 исхода</strong></td></tr>
+    <tr><td>Conduct Rule</td><td>CR 4 — «treat customers fairly»</td><td>CR 6 — «deliver good outcomes for retail customers»</td></tr>
+    <tr><td>Cross-cutting rules</td><td>Нет (6 исходов достаточно)</td><td>3 cross-cutting rules</td></tr>
+    <tr><td>Введено</td><td>2006 (как TCF, переименовано в FTOC)</td><td>Июль 2023 (закрытые продукты — июль 2024)</td></tr>
+  </table>
+
+  <div class="exam-box">
+    <div class="xb-title">Ловушка на экзамене</div>
+    Типичная ловушка: <strong>FTOC = 6 исходов, Consumer Duty = 4 исхода</strong>. Не путать! Также запомните: Исход 6 FTOC (отсутствие барьеров после продажи) — сценарий с необоснованным сроком переключения.
+  </div>
+</div>
+
+<!-- Summary Section 2 -->
+<div class="summary-card" id="sum2">
+  <div class="summary-title">📋 Итоговое резюме — Section 2</div>
+  <ul>
+    <li><strong>12 Principles for Businesses (PRIN)</strong> — юридически обязательны для всех авторизованных фирм. Нарушение → дисциплинарные санкции.</li>
+    <li>Принципы 1–12: Integrity / Skill, care, diligence / Management &amp; control / Financial prudence / Market conduct / Customers' interests / Communications / Conflicts / Relationships of trust / Clients' assets / Relations with regulators / Consumer Duty.</li>
+    <li><strong>Consumer Duty (P12)</strong> добавлен FCA в июле 2023. Включает Принцип + правила + 4 исхода + формальное руководство. Внедрение: новые/существующие — 31 июля 2023; закрытые продукты — 31 июля 2024.</li>
+    <li><strong>Сфера Consumer Duty:</strong> продукты/услуги для розничных клиентов (consumer credit, BCOBS, ICOBS без перестрахования, COBS, MCOB). Существующие + потенциальные клиенты. Wholesale — при существенном влиянии на розничные исходы (пропорционально).</li>
+    <li><strong>Исключения wholesale:</strong> нерозничные финансовые инструменты с минимальным номиналом <strong>£50 000</strong>, крупные страховые риски, групповое страхование, администрирование бенчмарков.</li>
+    <li><strong>Principle 12 вытесняет Principles 6 и 7</strong> в отношении розничных клиентов. Фирмы вне сферы — продолжают применять P6 и P7.</li>
+    <li><strong>Cross-cutting rules — 3:</strong> (1) Действовать добросовестно (2) Избегать предсказуемого вреда — НЕ предотвращать весь вред (3) Содействовать достижению финансовых целей.</li>
+    <li><strong>4 исхода Consumer Duty:</strong> (1) Products and Services — для целевого рынка (2) Price and Value — справедливое соотношение цены и пользы (3) Consumer Understanding — ясные коммуникации (4) Consumer Support — на протяжении всех отношений.</li>
+    <li><strong>Conduct Rule 6:</strong> «Вы обязаны действовать так, чтобы обеспечивать хорошие исходы для розничных клиентов» (для фирм в сфере Duty). Conduct Rule 4 остаётся для фирм вне сферы.</li>
+    <li>Подотчётность Consumer Duty через SM&CR. Требование о «чемпионе» упразднено в феврале 2025 года.</li>
+    <li><strong>FTOC</strong>: для фирм ВНЕ сферы Consumer Duty. Основан на Principle 6 + Principle 7. <strong>6 исходов</strong>: культура / дизайн продукта / ясная информация / пригодная консультация / продукт работает как ожидалось / нет барьеров после продажи.</li>
+    <li><strong>Ключ для экзамена:</strong> FTOC = 6 исходов; Consumer Duty = 4 исхода.</li>
+  </ul>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 3
+     ══════════════════════════════════════════════════════════ -->
+
+</div>
+</body>
+</html>
