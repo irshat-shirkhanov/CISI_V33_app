@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>CISI — UK Financial Regulations V33</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1E2761;--teal:#028090;--teal-l:#D6F0F3;--teal-d:#015E6A;--teal-m:#1D9E75;
+  --amber-l:#FEF3C7;--amber-d:#7C5A0A;--coral:#993C1D;--coral-l:#FAECE7;--coral-m:#D85A30;
+  --violet-l:#EDE9FE;--violet-d:#4C1D95;--violet-m:#7C3AED;
+  --green-l:#E1F5EE;--green:#085041;
+  --gray-l:#F1F5F9;--gray-m:#CBD5E1;--gray-d:#334155;
+  --bg:#F8FAFC;--card:#fff;--text:#1e293b;--text2:#475569;--text3:#94a3b8;
+  --radius:14px;--shadow:0 1px 4px rgba(0,0,0,.07),0 2px 8px rgba(0,0,0,.05);
+  --shadow-md:0 4px 16px rgba(0,0,0,.1);--border:#E2E8F0
+}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-text-size-adjust:100%}
+
+/* ── HEADER ── */
+.app-header{background:linear-gradient(135deg,#0F172A 0%,#1E293B 55%,#1E2761 80%,#028090 100%);padding:.8rem 1.2rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.28)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:.6rem;max-width:960px;margin:0 auto}
+.app-title{color:#fff;font-size:.92rem;font-weight:800;line-height:1.2}
+.app-sub{color:#94A3B8;font-size:.62rem;margin-top:.08rem}
+.header-right{display:flex;align-items:center;gap:.35rem;flex-shrink:0}
+.hdr-btn{border-radius:7px;padding:.26rem .65rem;font-size:.65rem;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:rgba(255,255,255,.88);white-space:nowrap;transition:all .18s}
+.hdr-btn:hover{background:rgba(255,255,255,.22)}
+.hdr-btn.danger{background:rgba(180,40,40,.22);border-color:rgba(255,110,110,.3);color:#fca5a5}
+.hdr-btn.danger:hover{background:rgba(180,40,40,.42)}
+.lang-wrap{display:flex;background:rgba(255,255,255,.1);border-radius:7px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+.lang-btn{padding:.26rem .55rem;font-size:.65rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.65);transition:all .15s}
+.lang-btn.active{background:rgba(255,255,255,.25);color:#fff}
+
+/* ── AUTH ── */
+.auth-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(160deg,#0F172A 0%,#1E293B 40%,#1a3a4a 100%);position:relative;overflow:hidden}
+.auth-page::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 30%,rgba(67,56,202,.14) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(2,128,144,.11) 0%,transparent 50%);pointer-events:none}
+.auth-lang{position:absolute;top:1rem;right:1rem;display:flex;background:rgba(255,255,255,.1);border-radius:7px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+.auth-lang-btn{padding:.28rem .6rem;font-size:.65rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.6);transition:all .15s}
+.auth-lang-btn.active{background:rgba(255,255,255,.22);color:#fff}
+.auth-card{background:rgba(255,255,255,.97);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.38);padding:1.8rem 1.7rem 1.6rem;width:100%;max-width:385px;position:relative;z-index:1}
+.auth-badge{display:inline-block;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;font-size:.58rem;font-weight:800;padding:.2rem .6rem;border-radius:18px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.65rem}
+.auth-logo-title{font-size:1.08rem;font-weight:800;color:var(--navy);line-height:1.2}
+.auth-logo-sub{font-size:.68rem;color:var(--text3);margin-top:.2rem}
+.auth-contacts{margin-top:.5rem;display:flex;flex-direction:column;gap:.12rem}
+.auth-contact{font-size:.67rem;color:var(--text2)}
+.auth-contact a{color:var(--teal-d);text-decoration:none;font-weight:600}
+.auth-divider{border:none;border-top:1px solid var(--border);margin:1rem 0 .9rem}
+.auth-tabs{display:flex;background:var(--gray-l);border-radius:9px;padding:.2rem;margin-bottom:1.1rem}
+.auth-tab{flex:1;padding:.36rem;border-radius:7px;font-size:.76rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .18s;text-align:center}
+.auth-tab.active{background:var(--card);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.11)}
+.field{margin-bottom:.8rem}
+.field label{display:block;font-size:.68rem;font-weight:700;color:var(--text2);margin-bottom:.28rem;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;padding:.55rem .78rem;border:1.5px solid var(--gray-m);border-radius:8px;font-size:.87rem;color:var(--text);background:var(--card);transition:all .18s;outline:none;-webkit-appearance:none}
+.field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(2,128,144,.1)}
+.auth-btn{width:100%;padding:.62rem;border:none;border-radius:9px;font-size:.87rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--navy),var(--teal));color:#fff;transition:all .2s;margin-top:.28rem}
+.auth-btn:hover{opacity:.9;transform:translateY(-1px)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-msg{margin-top:.75rem;padding:.52rem .78rem;border-radius:8px;font-size:.74rem;font-weight:600;text-align:center;display:none}
+.auth-msg.show{display:block}
+.auth-msg.ok{background:var(--green-l);color:var(--green);border:1px solid var(--teal-m)}
+.auth-msg.err{background:var(--coral-l);color:var(--coral);border:1px solid var(--coral-m)}
+.about-btn{width:100%;margin-top:.65rem;padding:.48rem;border:1.5px solid var(--teal);background:var(--teal-l);color:var(--teal-d);font-size:.73rem;font-weight:700;cursor:pointer;border-radius:8px;transition:all .18s}
+.about-btn:hover{background:var(--teal);color:#fff}
+
+/* ── PENDING ── */
+.pending-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.2rem;background:var(--bg)}
+.pending-card{background:var(--card);border-radius:16px;box-shadow:var(--shadow-md);padding:2.2rem 1.8rem;text-align:center;max-width:400px;width:100%;border:1px solid var(--border)}
+.pending-icon{font-size:2.8rem;margin-bottom:.9rem}
+.pending-title{font-size:1rem;font-weight:800;color:var(--navy);margin-bottom:.4rem}
+.pending-text{font-size:.78rem;color:var(--text2);line-height:1.65}
+
+/* ── HOME ── */
+.home-page{max-width:960px;margin:0 auto;padding:1.1rem 1rem 3rem}
+
+/* Dark hero banner */
+.home-hero{background:linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#1E2761 100%);border-radius:16px;padding:1.5rem 1.8rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.home-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 85% 50%,rgba(2,128,144,.22) 0%,transparent 60%);pointer-events:none}
+.home-hero-badge{display:inline-block;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.75);font-size:.58rem;font-weight:700;padding:.18rem .55rem;border-radius:18px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.55rem}
+.home-hero-title{font-size:clamp(.95rem,2.5vw,1.2rem);font-weight:800;color:#fff;line-height:1.25;margin-bottom:.28rem;position:relative}
+.home-hero-sub{font-size:.7rem;color:#94A3B8;position:relative;margin-bottom:.8rem}
+.home-hero-user{display:inline-flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:.24rem .7rem;position:relative}
+.hero-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0}
+.hero-email{font-size:.63rem;color:rgba(255,255,255,.72);font-weight:500}
+
+/* Test card */
+.test-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);border-left:4px solid var(--teal);padding:.95rem 1.15rem;margin-bottom:1.2rem;cursor:pointer;display:flex;align-items:center;gap:.9rem;transition:all .2s}
+.test-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-left-color:var(--navy)}
+.test-icon{font-size:1.7rem;flex-shrink:0}
+.test-body{flex:1}
+.test-title{font-size:.9rem;font-weight:800;color:var(--navy);margin-bottom:.18rem}
+.test-desc{font-size:.7rem;color:var(--text3);line-height:1.45}
+.test-arrow{font-size:1.1rem;color:var(--text3);flex-shrink:0}
+
+/* Guide label */
+.guide-label{font-size:.66rem;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:.65rem;padding-left:.1rem}
+
+/* Chapter cards — like the screenshots */
+.ch-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.9rem;margin-bottom:1.1rem}
+@media(max-width:560px){.ch-cards{grid-template-columns:1fr}}
+.ch-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);border-top:4px solid;overflow:hidden;cursor:pointer;transition:all .22s;display:flex;flex-direction:column}
+.ch-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.ch1-card{border-top-color:#4338CA}
+.ch2-card{border-top-color:#1E2761}
+.ch3-card{border-top-color:#9F1239}
+.ch4-card{border-top-color:#065F46}
+.ch-card-body{padding:1rem 1.15rem;flex:1}
+.ch-badge{display:inline-block;font-size:.58rem;font-weight:800;padding:.18rem .55rem;border-radius:5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.55rem}
+.ch1-badge{background:#EEF2FF;color:#4338CA}
+.ch2-badge{background:#E0F2F1;color:#1E2761}
+.ch3-badge{background:#FEE2E2;color:#9F1239}
+.ch4-badge{background:#D1FAE5;color:#065F46}
+.ch-card-title{font-size:.88rem;font-weight:800;color:var(--navy);line-height:1.3;margin-bottom:.4rem}
+.ch-card-desc{font-size:.7rem;color:var(--text3);line-height:1.5;margin-bottom:.75rem}
+.ch-card-footer{padding:.7rem 1.15rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--gray-l)}
+.ch-card-meta{font-size:.65rem;color:var(--text2)}
+.ch-card-meta strong{font-weight:800;color:var(--navy)}
+.ch-card-meta .sep{margin:0 .4rem;color:var(--gray-m)}
+.ch-card-arrow{font-size:.9rem;color:var(--text3)}
+
+/* Sections panel (shown when chapter clicked) */
+.sec-panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:1rem;overflow:hidden;display:none}
+.sec-panel.open{display:block}
+.sec-panel-hdr{padding:.75rem 1.1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.sec-panel-title{font-size:.78rem;font-weight:800;color:var(--navy)}
+.sec-close{background:none;border:1px solid var(--border);border-radius:6px;padding:.18rem .55rem;font-size:.67rem;cursor:pointer;color:var(--text3);font-weight:600}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)}
+@media(max-width:500px){.sec-grid{grid-template-columns:1fr}}
+.sec-item{padding:.55rem .95rem;font-size:.73rem;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--gray-l);border-right:1px solid var(--gray-l);transition:all .15s;line-height:1.35}
+.sec-item:hover{background:var(--teal-l);color:var(--teal-d);font-weight:600}
+.sec-item:nth-child(2n){border-right:none}
+.sec-en{display:block}
+.sec-ru{display:none;font-size:.65rem;color:var(--text3);font-style:italic;margin-top:.12rem}
+
+/* ── CONTENT ── */
+.content-page{max-width:1100px;margin:0 auto;padding:.85rem .9rem 2rem}
+.content-topbar{display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem}
+.back-btn{display:inline-flex;align-items:center;gap:.3rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .72rem;font-size:.7rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.back-btn:hover{background:var(--gray-l);color:var(--navy)}
+.content-title-bar{font-size:.76rem;font-weight:700;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.content-frame{background:var(--card);border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden}
+.content-frame iframe{width:100%;height:calc(100vh - 125px);min-height:420px;border:none;display:block}
+
+/* ── ADMIN ── */
+.admin-page{padding:1rem;max-width:900px;margin:0 auto}
+.admin-title{font-size:.98rem;font-weight:800;color:var(--navy);margin-bottom:.95rem}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:.55rem;margin-bottom:1rem}
+.admin-stat{background:var(--card);border-radius:10px;padding:.8rem;box-shadow:var(--shadow);border:1px solid var(--border);text-align:center}
+.admin-stat .n{font-size:1.55rem;font-weight:800;color:var(--navy)}
+.admin-stat .l{font-size:.6rem;color:var(--text3);margin-top:.1rem}
+.admin-section{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:.9rem;overflow:hidden}
+.admin-sec-hdr{padding:.7rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.admin-sec-title{font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.admin-refresh{background:none;border:1px solid var(--border);border-radius:6px;padding:.18rem .52rem;font-size:.64rem;cursor:pointer;color:var(--text3);font-weight:600}
+.admin-refresh:hover{background:var(--gray-l)}
+.user-row{display:flex;align-items:center;gap:.55rem;padding:.65rem 1rem;border-bottom:1px solid var(--gray-l);flex-wrap:wrap}
+.user-row:last-child{border-bottom:none}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--teal));display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:#fff;flex-shrink:0}
+.user-info{flex:1;min-width:100px}
+.user-email{font-size:.73rem;font-weight:600;color:var(--text);word-break:break-all}
+.user-meta{font-size:.6rem;color:var(--text3);margin-top:.07rem}
+.user-status{padding:.13rem .45rem;border-radius:18px;font-size:.6rem;font-weight:700;white-space:nowrap}
+.status-pending{background:var(--amber-l);color:var(--amber-d)}
+.status-approved{background:var(--green-l);color:var(--green)}
+.status-blocked{background:var(--coral-l);color:var(--coral)}
+.user-actions{display:flex;gap:.28rem;flex-wrap:wrap}
+.ua-btn{padding:.16rem .5rem;border-radius:5px;font-size:.6rem;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s}
+.ua-approve{background:var(--green-l);border-color:var(--teal-m);color:var(--green)}
+.ua-approve:hover{background:var(--teal-m);color:#fff}
+.ua-block{background:var(--coral-l);border-color:var(--coral-m);color:var(--coral)}
+.ua-block:hover{background:var(--coral-m);color:#fff}
+.ua-unblock{background:var(--amber-l);border-color:#B07D12;color:var(--amber-d)}
+.ua-unblock:hover{background:#B07D12;color:#fff}
+.ua-kick{background:var(--violet-l);border-color:#C4B5FD;color:var(--violet-d)}
+.ua-kick:hover{background:var(--violet-m);color:#fff}
+.session-row{display:flex;align-items:flex-start;gap:.6rem;padding:.6rem 1rem;border-bottom:1px solid var(--gray-l)}
+.session-row:last-child{border-bottom:none}
+.session-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-m);margin-top:.28rem;flex-shrink:0}
+.session-info{flex:1}
+.session-email{font-size:.71rem;font-weight:600;color:var(--text);word-break:break-all}
+.session-meta{font-size:.6rem;color:var(--text3);margin-top:.08rem;line-height:1.5}
+.log-row{display:flex;gap:.6rem;padding:.55rem 1rem;border-bottom:1px solid var(--gray-l);align-items:flex-start}
+.log-row:last-child{border-bottom:none}
+.log-time{font-size:.6rem;color:var(--text3);white-space:nowrap;min-width:75px;padding-top:.04rem}
+.log-info{flex:1}
+.log-email{font-size:.7rem;font-weight:600;color:var(--text);word-break:break-all}
+.log-meta{font-size:.58rem;color:var(--text3);margin-top:.05rem}
+.empty-row{padding:1.1rem;text-align:center;color:var(--text3);font-size:.74rem}
+
+/* ── SESSION BANNER ── */
+.session-banner{background:linear-gradient(135deg,var(--violet-l),#F5F3FF);border-bottom:2px solid #C4B5FD;padding:.48rem 1rem;font-size:.7rem;font-weight:600;color:var(--violet-d);display:none;align-items:center;gap:.5rem;justify-content:center;text-align:center}
+.session-banner.show{display:flex}
+
+/* ── LOADER ── */
+.loader-page{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.6rem;background:var(--bg)}
+.loader{width:30px;height:30px;border:3px solid var(--gray-m);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{font-size:.73rem;color:var(--text3)}
+.badge-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal-m);margin-right:.25rem}
+</style>
+</head>
+<body>
+
+<div class="session-banner" id="sessionBanner">⚡ <span data-en="Another device signed into this account. You have been disconnected." data-ru="Другое устройство вошло в аккаунт. Вы были отключены.">Another device signed into this account. You have been disconnected.</span></div>
+
+<div class="app-header" id="appHeader" style="display:none">
+  <div class="header-inner">
+    <div>
+      <div class="app-title">CISI · UK Financial Regulations</div>
+      <div class="app-sub" id="headerSub">Edition 33</div>
+    </div>
+    <div class="header-right">
+      <div class="lang-wrap">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('ru')">RU</button>
+      </div>
+      <div id="headerBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div class="loader-page" id="loaderScreen">
+  <div class="loader"></div>
+  <div class="loader-text" data-en="Loading..." data-ru="Загрузка...">Loading...</div>
+</div>
+
+<!-- AUTH -->
+<div id="authScreen" style="display:none">
+  <div class="auth-page">
+    <div class="auth-lang">
+      <button class="auth-lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="auth-lang-btn" onclick="setLang('ru')">RU</button>
+    </div>
+    <div class="auth-card">
+      <div class="auth-badge">CISI · Edition 33</div>
+      <div class="auth-logo-title">UK Financial Regulations</div>
+      <div class="auth-logo-sub" data-en="Study Platform" data-ru="Учебная платформа">Study Platform</div>
+      <div class="auth-contacts">
+        <div class="auth-contact">✉️ <a href="mailto:erik.solo90@gmail.com">erik.solo90@gmail.com</a></div>
+        <div class="auth-contact">📞 <a href="tel:+79854366828">+7 985 43 66 828</a></div>
+      </div>
+      <hr class="auth-divider">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')" data-en="Sign In" data-ru="Войти">Sign In</button>
+        <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')" data-en="Sign Up" data-ru="Регистрация">Sign Up</button>
+      </div>
+      <div class="field">
+        <label data-en="Email" data-ru="Email">Email</label>
+        <input type="email" id="authEmail" placeholder="your@email.com" autocomplete="email" inputmode="email">
+      </div>
+      <div class="field">
+        <label data-en="Password" data-ru="Пароль">Password</label>
+        <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="auth-btn" id="authSubmitBtn" onclick="handleAuth()" data-en="Sign In" data-ru="Войти">Sign In</button>
+      <div class="auth-msg" id="authMsg"></div>
+      <button class="about-btn" onclick="openAbout()" data-en="ℹ️ About this study platform" data-ru="ℹ️ О платформе">ℹ️ About this study platform</button>
+    </div>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div id="pendingScreen" style="display:none">
+  <div class="pending-page">
+    <div class="pending-card">
+      <div class="pending-icon">⏳</div>
+      <div class="pending-title" data-en="Awaiting Approval" data-ru="Ожидание одобрения">Awaiting Approval</div>
+      <div class="pending-text" data-en="Your account has been registered and is awaiting administrator approval.<br><br>This usually takes a few hours. Please try signing in again later." data-ru="Ваш аккаунт зарегистрирован и ожидает одобрения администратора.<br><br>Обычно это занимает несколько часов. Попробуйте войти позже.">Your account has been registered and is awaiting administrator approval.<br><br>This usually takes a few hours. Please try signing in again later.</div>
+      <br>
+      <button class="auth-btn" onclick="handleLogout()" data-en="Sign Out" data-ru="Выйти">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="homeScreen" style="display:none">
+  <div class="home-page">
+
+    <div class="home-hero">
+      <div class="home-hero-badge">CISI · UK Financial Regulations · Ed. 33</div>
+      <div class="home-hero-title" data-en="Welcome to your Study Platform" data-ru="Добро пожаловать на учебную платформу">Welcome to your Study Platform</div>
+      <div class="home-hero-sub" data-en="Select a section below to begin studying" data-ru="Выберите раздел для изучения">Select a section below to begin studying</div>
+      <div class="home-hero-user">
+        <div class="hero-dot"></div>
+        <div class="hero-email" id="heroUserEmail">—</div>
+      </div>
+    </div>
+
+    <!-- Practice Test -->
+    <div class="test-card" onclick="openFile('CISI_final_test.html','Practice Test')">
+      <div class="test-icon">📝</div>
+      <div class="test-body">
+        <div class="test-title" data-en="Practice Test" data-ru="Практический тест">Practice Test</div>
+        <div class="test-desc" data-en="75 exam-style questions covering all chapters with detailed explanations" data-ru="75 экзаменационных вопросов по всем главам с подробными объяснениями">75 exam-style questions covering all chapters with detailed explanations</div>
+      </div>
+      <div class="test-arrow">›</div>
+    </div>
+
+    <div class="guide-label" data-en="📖 Study Guide — All Chapters" data-ru="📖 Учебный гайд — Все главы">📖 Study Guide — All Chapters</div>
+
+    <!-- Chapter cards -->
+    <div class="ch-cards">
+
+      <div class="ch-card ch1-card" onclick="toggleChapter('ch1')">
+        <div class="ch-card-body">
+          <div class="ch-badge ch1-badge">Chapter 1</div>
+          <div class="ch-card-title">The Regulatory Environment</div>
+          <div class="ch-card-desc" data-en="FCA and PRA, statutory objectives, Principles for Businesses, SM&CR, prudential standards, regulated activities, training and competence." data-ru="FCA и PRA, законодательные цели, Принципы для бизнеса, SM&CR, пруденциальные стандарты, регулируемые виды деятельности, обучение и компетентность.">FCA and PRA, statutory objectives, Principles for Businesses, SM&CR, prudential standards, regulated activities, training and competence.</div>
+        </div>
+        <div class="ch-card-footer">
+          <div class="ch-card-meta"><strong>7</strong> <span data-en="Sections" data-ru="Секций">Sections</span><span class="sep">·</span>~<strong>12</strong> <span data-en="Exam questions" data-ru="Вопросов">Exam questions</span></div>
+          <div class="ch-card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="ch-card ch2-card" onclick="toggleChapter('ch2')">
+        <div class="ch-card-body">
+          <div class="ch-badge ch2-badge">Chapter 2</div>
+          <div class="ch-card-title">Conduct of Business and Client Assets</div>
+          <div class="ch-card-desc" data-en="COBS, client categorisation, Consumer Duty / FTOC, financial promotions, suitability, conflicts, inducements, dealing, CASS." data-ru="COBS, категоризация клиентов, Consumer Duty, финансовые промоакции, пригодность, конфликты интересов, индуцирование, сделки, CASS.">COBS, client categorisation, Consumer Duty / FTOC, financial promotions, suitability, conflicts, inducements, dealing, CASS.</div>
+        </div>
+        <div class="ch-card-footer">
+          <div class="ch-card-meta"><strong>13</strong> <span data-en="Sections" data-ru="Секций">Sections</span><span class="sep">·</span>~<strong>35</strong> <span data-en="Exam questions" data-ru="Вопросов">Exam questions</span></div>
+          <div class="ch-card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="ch-card ch3-card" onclick="toggleChapter('ch3')">
+        <div class="ch-card-body">
+          <div class="ch-badge ch3-badge">Chapter 3</div>
+          <div class="ch-card-title">Enhancing Market Integrity</div>
+          <div class="ch-card-desc" data-en="Market abuse, insider dealing, market manipulation, money laundering, POCA, Bribery Act, fraud, DTR." data-ru="Злоупотребление рынком, инсайдерская торговля, манипуляция рынком, отмывание денег, POCA, Закон о взяточничестве, мошенничество, DTR.">Market abuse, insider dealing, market manipulation, money laundering, POCA, Bribery Act, fraud, DTR.</div>
+        </div>
+        <div class="ch-card-footer">
+          <div class="ch-card-meta"><strong>8</strong> <span data-en="Sections" data-ru="Секций">Sections</span><span class="sep">·</span>~<strong>19</strong> <span data-en="Exam questions" data-ru="Вопросов">Exam questions</span></div>
+          <div class="ch-card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="ch-card ch4-card" onclick="toggleChapter('ch4')">
+        <div class="ch-card-body">
+          <div class="ch-badge ch4-badge">Chapter 4</div>
+          <div class="ch-card-title">Complaints and Redress</div>
+          <div class="ch-card-desc" data-en="Consumer Rights Act, complaint handling (DISP), Financial Ombudsman Service (FOS), FSCS, Data Protection Act / UK GDPR, whistleblowing." data-ru="Закон о правах потребителей, рассмотрение жалоб (DISP), Финансовый омбудсмен (FOS), FSCS, Закон о защите данных / UK GDPR, информирование о нарушениях.">Consumer Rights Act, complaint handling (DISP), Financial Ombudsman Service (FOS), FSCS, Data Protection Act / UK GDPR, whistleblowing.</div>
+        </div>
+        <div class="ch-card-footer">
+          <div class="ch-card-meta"><strong>4</strong> <span data-en="Sections" data-ru="Секций">Sections</span><span class="sep">·</span>~<strong>9</strong> <span data-en="Exam questions" data-ru="Вопросов">Exam questions</span></div>
+          <div class="ch-card-arrow">→</div>
+        </div>
+      </div>
+
+    </div><!-- /ch-cards -->
+
+    <!-- Section panels -->
+    <div class="sec-panel" id="ch1-panel">
+      <div class="sec-panel-hdr">
+        <div class="sec-panel-title">Chapter 1 · The Regulatory Environment</div>
+        <button class="sec-close" onclick="toggleChapter('ch1')" data-en="✕ Close" data-ru="✕ Закрыть">✕ Close</button>
+      </div>
+      <div class="sec-grid">
+        <div class="sec-item" onclick="openFile('Ch1_Sec1_Detailed_EN.html','Ch1 · S1')"><span class="sec-en">1.1 The Regulatory Environment</span><span class="sec-ru">1.1 Регуляторная среда</span></div>
+        <div class="sec-item" onclick="openFile('Ch1_Sec2_Detailed_EN.html','Ch1 · S2')"><span class="sec-en">1.2 Principles for Businesses</span><span class="sec-ru">1.2 Принципы для бизнеса</span></div>
+        <div class="sec-item" onclick="openFile('Ch1_Sec3_Detailed_EN.html','Ch1 · S3')"><span class="sec-en">1.3 Fitness and Propriety</span><span class="sec-ru">1.3 Соответствие и добропорядочность</span></div>
+        <div class="sec-item" onclick="openFile('Ch1_Sec4_Detailed_EN.html','Ch1 · S4')"><span class="sec-en">1.4 Prudential Standards</span><span class="sec-ru">1.4 Пруденциальные стандарты</span></div>
+        <div class="sec-item" onclick="openFile('Ch1_Sec5_Detailed_EN.html','Ch1 · S5')"><span class="sec-en">1.5 The UK Regulatory Infrastructure</span><span class="sec-ru">1.5 Регуляторная инфраструктура Великобритании</span></div>
+        <div class="sec-item" onclick="openFile('Ch1_Sec6_Detailed_EN.html','Ch1 · S6')"><span class="sec-en">1.6 Regulated and Prohibited Activities</span><span class="sec-ru">1.6 Регулируемые и запрещённые виды деятельности</span></div>
+        <div class="sec-item" onclick="openFile('Ch1_Sec7_Detailed_EN.html','Ch1 · S7')"><span class="sec-en">1.7 Training and Competence</span><span class="sec-ru">1.7 Обучение и компетентность</span></div>
+      </div>
+    </div>
+
+    <div class="sec-panel" id="ch2-panel">
+      <div class="sec-panel-hdr">
+        <div class="sec-panel-title">Chapter 2 · Conduct of Business and Client Assets</div>
+        <button class="sec-close" onclick="toggleChapter('ch2')" data-en="✕ Close" data-ru="✕ Закрыть">✕ Close</button>
+      </div>
+      <div class="sec-grid">
+        <div class="sec-item" onclick="openFile('Ch2_Sec1_Detailed_EN.html','Ch2 · S1')"><span class="sec-en">2.1 Application and General Provisions of COBS</span><span class="sec-ru">2.1 Применение и общие положения COBS</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec2_Detailed_EN.html','Ch2 · S2')"><span class="sec-en">2.2 Appointed Representatives</span><span class="sec-ru">2.2 Назначенные представители</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec3_Detailed_EN.html','Ch2 · S3')"><span class="sec-en">2.3 Accepting Clients</span><span class="sec-ru">2.3 Принятие клиентов</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec4_Detailed_EN.html','Ch2 · S4')"><span class="sec-en">2.4 Client Agreements and Information Provision</span><span class="sec-ru">2.4 Соглашения с клиентами и предоставление информации</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec5_Detailed_EN.html','Ch2 · S5')"><span class="sec-en">2.5 Communicating with Clients, incl. Financial Promotions</span><span class="sec-ru">2.5 Общение с клиентами, включая финансовые промоакции</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec6_Detailed_EN.html','Ch2 · S6')"><span class="sec-en">2.6 Retail Clients</span><span class="sec-ru">2.6 Розничные клиенты</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec7_Detailed_EN.html','Ch2 · S7')"><span class="sec-en">2.7 Advising and Selling Standards</span><span class="sec-ru">2.7 Стандарты консультирования и продаж</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec8_Detailed_EN.html','Ch2 · S8')"><span class="sec-en">2.8 Product Disclosure and the Right to Cancel</span><span class="sec-ru">2.8 Раскрытие информации о продукте и право отмены</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec9_Detailed_EN.html','Ch2 · S9')"><span class="sec-en">2.9 Conflicts of Interest</span><span class="sec-ru">2.9 Конфликты интересов</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec10_Detailed_EN.html','Ch2 · S10')"><span class="sec-en">2.10 Inducements and Payment for Research</span><span class="sec-ru">2.10 Вознаграждения и оплата исследований</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec11_Detailed_EN.html','Ch2 · S11')"><span class="sec-en">2.11 Dealing and Managing</span><span class="sec-ru">2.11 Совершение сделок и управление</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec12_Detailed_EN.html','Ch2 · S12')"><span class="sec-en">2.12 Reporting of Transactions</span><span class="sec-ru">2.12 Отчётность по сделкам</span></div>
+        <div class="sec-item" onclick="openFile('Ch2_Sec13_Detailed_EN.html','Ch2 · S13')"><span class="sec-en">2.13 Client Assets</span><span class="sec-ru">2.13 Активы клиентов (CASS)</span></div>
+      </div>
+    </div>
+
+    <div class="sec-panel" id="ch3-panel">
+      <div class="sec-panel-hdr">
+        <div class="sec-panel-title">Chapter 3 · Enhancing Market Integrity</div>
+        <button class="sec-close" onclick="toggleChapter('ch3')" data-en="✕ Close" data-ru="✕ Закрыть">✕ Close</button>
+      </div>
+      <div class="sec-grid">
+        <div class="sec-item" onclick="openFile('Ch3_Sec1_Detailed_EN.html','Ch3 · S1')"><span class="sec-en">3.1 Market Abuse</span><span class="sec-ru">3.1 Злоупотребление рынком</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec2_Detailed_EN.html','Ch3 · S2')"><span class="sec-en">3.2 Insider Dealing</span><span class="sec-ru">3.2 Инсайдерская торговля</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec3_Detailed_EN.html','Ch3 · S3')"><span class="sec-en">3.3 Market Manipulation</span><span class="sec-ru">3.3 Манипуляция рынком</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec4_Detailed_EN.html','Ch3 · S4')"><span class="sec-en">3.4 Money Laundering and Financial Crime</span><span class="sec-ru">3.4 Отмывание денег и финансовые преступления</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec5_Detailed_EN.html','Ch3 · S5')"><span class="sec-en">3.5 Record-Keeping Requirements</span><span class="sec-ru">3.5 Требования к ведению документации</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec6_Detailed_EN.html','Ch3 · S6')"><span class="sec-en">3.6 The Bribery Act</span><span class="sec-ru">3.6 Закон о взяточничестве</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec7_Detailed_EN.html','Ch3 · S7')"><span class="sec-en">3.7 Fraud and Economic Crime</span><span class="sec-ru">3.7 Мошенничество и экономические преступления</span></div>
+        <div class="sec-item" onclick="openFile('Ch3_Sec8_Detailed_EN.html','Ch3 · S8')"><span class="sec-en">3.8 The Disclosure and Transparency Rules (DTR)</span><span class="sec-ru">3.8 Правила раскрытия информации и прозрачности (DTR)</span></div>
+      </div>
+    </div>
+
+    <div class="sec-panel" id="ch4-panel">
+      <div class="sec-panel-hdr">
+        <div class="sec-panel-title">Chapter 4 · Complaints and Redress</div>
+        <button class="sec-close" onclick="toggleChapter('ch4')" data-en="✕ Close" data-ru="✕ Закрыть">✕ Close</button>
+      </div>
+      <div class="sec-grid">
+        <div class="sec-item" onclick="openFile('Ch4_Sec1_Detailed_EN.html','Ch4 · S1')"><span class="sec-en">4.1 Consumer Rights</span><span class="sec-ru">4.1 Права потребителей</span></div>
+        <div class="sec-item" onclick="openFile('Ch4_Sec2_Detailed_EN.html','Ch4 · S2')"><span class="sec-en">4.2 Customer Complaints</span><span class="sec-ru">4.2 Жалобы клиентов</span></div>
+        <div class="sec-item" onclick="openFile('Ch4_Sec3_Detailed_EN.html','Ch4 · S3')"><span class="sec-en">4.3 Data Protection</span><span class="sec-ru">4.3 Защита данных</span></div>
+        <div class="sec-item" onclick="openFile('Ch4_Sec4_Detailed_EN.html','Ch4 · S4')"><span class="sec-en">4.4 Whistleblowing</span><span class="sec-ru">4.4 Информирование о нарушениях</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div id="contentScreen" style="display:none">
+  <div class="content-page">
+    <div class="content-topbar">
+      <button class="back-btn" onclick="goHome()">← <span data-en="Back" data-ru="Назад">Back</span></button>
+      <div class="content-title-bar" id="contentTitle"></div>
+    </div>
+    <div class="content-frame" id="contentFrame"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="adminScreen" style="display:none">
+  <div class="admin-page">
+    <div class="admin-title">👑 <span data-en="Admin Panel" data-ru="Панель администратора">Admin Panel</span></div>
+    <div class="admin-grid">
+      <div class="admin-stat"><div class="n" id="statTotal">—</div><div class="l" data-en="Total Users" data-ru="Всего пользователей">Total Users</div></div>
+      <div class="admin-stat"><div class="n" id="statApproved">—</div><div class="l" data-en="Approved" data-ru="Одобрено">Approved</div></div>
+      <div class="admin-stat"><div class="n" id="statPending">—</div><div class="l" data-en="Pending" data-ru="Ожидают">Pending</div></div>
+      <div class="admin-stat"><div class="n" id="statOnline">—</div><div class="l" data-en="Online Now" data-ru="Онлайн">Online Now</div></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-sec-hdr">
+        <div class="admin-sec-title">⏳ <span data-en="Pending Approval" data-ru="Ожидают одобрения">Pending Approval</span></div>
+        <button class="admin-refresh" onclick="loadAdminData()">↻</button>
+      </div>
+      <div id="pendingList"><div class="empty-row">Loading...</div></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-sec-hdr"><div class="admin-sec-title">👥 <span data-en="All Users" data-ru="Все пользователи">All Users</span></div></div>
+      <div id="allUsersList"><div class="empty-row">Loading...</div></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-sec-hdr">
+        <div class="admin-sec-title"><span class="badge-dot"></span><span data-en="Active Sessions" data-ru="Активные сессии">Active Sessions</span></div>
+        <button class="admin-refresh" onclick="loadAdminData()">↻</button>
+      </div>
+      <div id="sessionsList"><div class="empty-row">Loading...</div></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-sec-hdr"><div class="admin-sec-title">📋 <span data-en="Recent Logins" data-ru="Последние входы">Recent Logins</span></div></div>
+      <div id="logsList"><div class="empty-row">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://wpvxxvicfdncuxzekhot.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_B441haXJaEKrjzsSGzaFdg_b6b0MwbG';
+const ADMIN_EMAIL  = 'erik.solo90@gmail.com';
+const BASE_URL     = 'https://academysh.github.io/CISI_V33_app/';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+let sessionToken = null;
+let sessionCheckInterval = null;
+let currentLang = localStorage.getItem('cisi_lang') || 'en';
+
+// ── LANG ──────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('cisi_lang', lang);
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const val = el.getAttribute('data-' + lang);
+    if (val !== null) {
+      if (el.tagName === 'INPUT') el.placeholder = val;
+      else el.innerHTML = val;
+    }
+  });
+  // sec-en / sec-ru toggles
+  document.querySelectorAll('.sec-en').forEach(el => el.style.display = lang === 'en' ? 'block' : 'none');
+  document.querySelectorAll('.sec-ru').forEach(el => el.style.display = lang === 'ru' ? 'block' : 'none');
+  // lang buttons
+  document.querySelectorAll('.lang-btn,.auth-lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang);
+  });
+  // authSubmitBtn tab sync
+  const isLogin = document.getElementById('tabLogin').classList.contains('active');
+  const btn = document.getElementById('authSubmitBtn');
+  if (btn) btn.textContent = lang === 'en' ? (isLogin ? 'Sign In' : 'Sign Up') : (isLogin ? 'Войти' : 'Зарегистрироваться');
+}
+
+// ── INIT ──────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  setLang(currentLang);
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { currentUser = session.user; await afterLogin(); }
+  else showScreen('auth');
+});
+
+// ── AUTH TAB ──────────────────────────────
+function switchAuthTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  const btn = document.getElementById('authSubmitBtn');
+  if (currentLang === 'ru') btn.textContent = tab === 'login' ? 'Войти' : 'Зарегистрироваться';
+  else btn.textContent = tab === 'login' ? 'Sign In' : 'Sign Up';
+  document.getElementById('authMsg').className = 'auth-msg';
+}
+
+// ── HANDLE AUTH ───────────────────────────
+async function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const isLogin = document.getElementById('tabLogin').classList.contains('active');
+  const btn = document.getElementById('authSubmitBtn');
+  const ru = currentLang === 'ru';
+  if (!email || !password) { showAuthMsg(ru ? 'Заполните все поля' : 'Please fill in all fields', 'err'); return; }
+  if (password.length < 6) { showAuthMsg(ru ? 'Пароль минимум 6 символов' : 'Password must be at least 6 characters', 'err'); return; }
+  btn.disabled = true; btn.textContent = '...';
+  if (isLogin) {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { showAuthMsg(translateError(error.message), 'err'); btn.disabled = false; btn.textContent = ru ? 'Войти' : 'Sign In'; return; }
+    currentUser = data.user; await afterLogin();
+  } else {
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) { showAuthMsg(translateError(error.message), 'err'); btn.disabled = false; btn.textContent = ru ? 'Зарегистрироваться' : 'Sign Up'; return; }
+    showAuthMsg(ru ? 'Аккаунт создан! Ожидайте одобрения администратора.' : 'Account created! Please wait for administrator approval.', 'ok');
+    btn.disabled = false; btn.textContent = ru ? 'Зарегистрироваться' : 'Sign Up';
+  }
+}
+
+// ── AFTER LOGIN ───────────────────────────
+async function afterLogin() {
+  showScreen('loader');
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = profile;
+  if (!profile) {
+    await sb.from('profiles').insert({ id: currentUser.id, email: currentUser.email, is_approved: false, is_blocked: false });
+    currentProfile = { is_approved: false, is_blocked: false };
+  }
+  const isAdmin = currentUser.email === ADMIN_EMAIL;
+  if (!isAdmin && (!currentProfile.is_approved || currentProfile.is_blocked)) {
+    renderHeader(false); showScreen('pending'); return;
+  }
+  await registerSession();
+  sessionCheckInterval = setInterval(checkSession, 30000);
+  renderHeader(true, isAdmin);
+  if (isAdmin) { showScreen('admin'); loadAdminData(); }
+  else {
+    const el = document.getElementById('heroUserEmail');
+    if (el) el.textContent = currentUser.email;
+    showScreen('home');
+  }
+}
+
+// ── SESSION ───────────────────────────────
+async function registerSession() {
+  await sb.from('active_sessions').delete().eq('user_id', currentUser.id);
+  sessionToken = crypto.randomUUID();
+  const ip = await getIP();
+  await sb.from('active_sessions').insert({
+    user_id: currentUser.id, session_token: sessionToken,
+    ip_address: ip, user_agent: navigator.userAgent.substring(0, 200),
+    last_seen: new Date().toISOString()
+  });
+}
+
+async function checkSession() {
+  if (!sessionToken) return;
+  const { data } = await sb.from('active_sessions').select('session_token').eq('user_id', currentUser.id).single();
+  if (!data || data.session_token !== sessionToken) {
+    clearInterval(sessionCheckInterval);
+    document.getElementById('sessionBanner').classList.add('show');
+    await sb.auth.signOut();
+    setTimeout(() => { document.getElementById('sessionBanner').classList.remove('show'); renderHeader(false); showScreen('auth'); }, 4000);
+    return;
+  }
+  await sb.from('active_sessions').update({ last_seen: new Date().toISOString() }).eq('session_token', sessionToken);
+}
+
+async function getIP() {
+  try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); return d.ip; } catch { return 'unknown'; }
+}
+
+// ── LOGOUT ────────────────────────────────
+async function handleLogout() {
+  clearInterval(sessionCheckInterval);
+  if (currentUser) await sb.from('active_sessions').delete().eq('user_id', currentUser.id);
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null; sessionToken = null;
+  renderHeader(false); showScreen('auth');
+}
+
+// ── NAVIGATION ────────────────────────────
+function goHome() { showScreen('home'); }
+
+function toggleChapter(ch) {
+  ['ch1','ch2','ch3','ch4'].forEach(c => {
+    const p = document.getElementById(c+'-panel');
+    if (p) p.classList.toggle('open', c === ch && !document.getElementById(ch+'-panel').classList.contains('open'));
+  });
+  // If opening, scroll to panel
+  setTimeout(() => {
+    const p = document.getElementById(ch+'-panel');
+    if (p && p.classList.contains('open')) p.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 50);
+}
+
+function openFile(filename, title) {
+  showScreen('content');
+  document.getElementById('contentTitle').textContent = title;
+  let url = BASE_URL + filename;
+  if (currentLang === 'ru' && filename.includes('_EN.html')) {
+    url = BASE_URL + filename.replace('_EN.html', '_RU.html');
+  }
+  document.getElementById('contentFrame').innerHTML =
+    `<iframe src="${url}" allowfullscreen></iframe>`;
+}
+
+// ── ADMIN ─────────────────────────────────
+async function loadAdminData() {
+  const { data: profiles } = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+  const { data: sessions } = await sb.from('active_sessions').select('*').order('last_seen', { ascending: false });
+  if (profiles) {
+    const pending = profiles.filter(p => !p.is_approved && !p.is_blocked);
+    const approved = profiles.filter(p => p.is_approved);
+    document.getElementById('statTotal').textContent    = profiles.length;
+    document.getElementById('statApproved').textContent = approved.length;
+    document.getElementById('statPending').textContent  = pending.length;
+    document.getElementById('statOnline').textContent   = sessions ? sessions.length : 0;
+    const pendingEl = document.getElementById('pendingList');
+    pendingEl.innerHTML = pending.length === 0
+      ? `<div class="empty-row">${currentLang==='ru'?'Нет ожидающих 🎉':'No pending users 🎉'}</div>`
+      : pending.map(u => userRowHTML(u, sessions)).join('');
+    const allEl = document.getElementById('allUsersList');
+    const filtered = profiles.filter(p => p.email !== ADMIN_EMAIL);
+    allEl.innerHTML = filtered.length === 0
+      ? `<div class="empty-row">${currentLang==='ru'?'Нет пользователей':'No users found'}</div>`
+      : filtered.map(u => userRowHTML(u, sessions)).join('');
+  }
+  const sEl = document.getElementById('sessionsList');
+  sEl.innerHTML = !sessions || sessions.length === 0
+    ? `<div class="empty-row">${currentLang==='ru'?'Нет активных сессий':'No active sessions'}</div>`
+    : sessions.map(s => `<div class="session-row"><div class="session-dot"></div><div class="session-info"><div class="session-email">${s.user_id}</div><div class="session-meta">🌐 ${s.ip_address||'—'} · 🕐 ${timeAgo(s.last_seen)} · 💻 ${shortUA(s.user_agent)}</div></div></div>`).join('');
+  const { data: logs } = await sb.from('active_sessions').select('*').order('created_at', { ascending: false }).limit(20);
+  const lEl = document.getElementById('logsList');
+  lEl.innerHTML = !logs || logs.length === 0
+    ? `<div class="empty-row">${currentLang==='ru'?'Нет записей':'No records yet'}</div>`
+    : logs.map(l => `<div class="log-row"><div class="log-time">${formatDate(l.created_at)}</div><div class="log-info"><div class="log-email">${l.user_id}</div><div class="log-meta">🌐 ${l.ip_address||'—'} · 💻 ${shortUA(l.user_agent)}</div></div></div>`).join('');
+}
+
+function userRowHTML(u, sessions) {
+  const isOnline = sessions && sessions.some(s => s.user_id === u.id);
+  const status = u.is_blocked ? 'blocked' : u.is_approved ? 'approved' : 'pending';
+  const ru = currentLang === 'ru';
+  const statusLabel = u.is_blocked ? (ru?'Заблок.':'Blocked') : u.is_approved ? (ru?'Одобрён':'Approved') : (ru?'Ожидает':'Pending');
+  const initials = (u.email||'?')[0].toUpperCase();
+  let actions = '';
+  if (!u.is_approved && !u.is_blocked) {
+    actions += `<button class="ua-btn ua-approve" onclick="approveUser('${u.id}')">✓ ${ru?'Одобрить':'Approve'}</button>`;
+    actions += `<button class="ua-btn ua-block" onclick="blockUser('${u.id}')">✗ ${ru?'Блок':'Block'}</button>`;
+  } else if (u.is_approved && !u.is_blocked) {
+    actions += `<button class="ua-btn ua-block" onclick="blockUser('${u.id}')">✗ ${ru?'Блок':'Block'}</button>`;
+    if (isOnline) actions += `<button class="ua-btn ua-kick" onclick="kickUser('${u.id}')">⚡ ${ru?'Выкинуть':'Kick'}</button>`;
+  } else if (u.is_blocked) {
+    actions += `<button class="ua-btn ua-unblock" onclick="unblockUser('${u.id}')">↩ ${ru?'Разблок':'Unblock'}</button>`;
+  }
+  return `<div class="user-row"><div class="user-avatar">${isOnline?'🟢':initials}</div><div class="user-info"><div class="user-email">${u.email||u.id}</div><div class="user-meta">${ru?'Зарег.':'Registered:'} ${formatDate(u.created_at)}${isOnline?' · <b style="color:var(--teal-m)">'+(ru?'онлайн':'online')+'</b>':''}</div></div><div class="user-status status-${status}">${statusLabel}</div><div class="user-actions">${actions}</div></div>`;
+}
+
+async function approveUser(id) { await sb.from('profiles').update({ is_approved: true }).eq('id', id); loadAdminData(); }
+async function blockUser(id) { await sb.from('profiles').update({ is_approved: false, is_blocked: true }).eq('id', id); await sb.from('active_sessions').delete().eq('user_id', id); loadAdminData(); }
+async function unblockUser(id) { await sb.from('profiles').update({ is_blocked: false }).eq('id', id); loadAdminData(); }
+async function kickUser(id) { await sb.from('active_sessions').delete().eq('user_id', id); loadAdminData(); }
+
+// ── HEADER ────────────────────────────────
+function renderHeader(show, isAdmin = false) {
+  const header = document.getElementById('appHeader');
+  const sub = document.getElementById('headerSub');
+  const btns = document.getElementById('headerBtns');
+  if (!show) { header.style.display = 'none'; return; }
+  header.style.display = 'block';
+  if (currentUser) sub.textContent = currentUser.email;
+  btns.innerHTML = '';
+  if (isAdmin) {
+    const a = document.createElement('button'); a.className='hdr-btn';
+    a.setAttribute('data-en','👑 Admin'); a.setAttribute('data-ru','👑 Админ'); a.textContent='👑 Admin';
+    a.onclick=()=>{showScreen('admin');loadAdminData();}; btns.appendChild(a);
+    const h = document.createElement('button'); h.className='hdr-btn';
+    h.setAttribute('data-en','🏠 Home'); h.setAttribute('data-ru','🏠 Главная'); h.textContent='🏠 Home';
+    h.onclick=()=>showScreen('home'); btns.appendChild(h);
+  }
+  const l = document.createElement('button'); l.className='hdr-btn danger';
+  l.setAttribute('data-en','Sign Out'); l.setAttribute('data-ru','Выйти'); l.textContent='Sign Out';
+  l.onclick=handleLogout; btns.appendChild(l);
+  setLang(currentLang);
+}
+
+// ── SCREENS ───────────────────────────────
+function showScreen(name) {
+  document.getElementById('loaderScreen').style.display  = name==='loader'  ? 'flex'  : 'none';
+  document.getElementById('authScreen').style.display    = name==='auth'    ? 'block' : 'none';
+  document.getElementById('pendingScreen').style.display = name==='pending' ? 'block' : 'none';
+  document.getElementById('homeScreen').style.display    = name==='home'    ? 'block' : 'none';
+  document.getElementById('contentScreen').style.display = name==='content' ? 'block' : 'none';
+  document.getElementById('adminScreen').style.display   = name==='admin'   ? 'block' : 'none';
+  if (name==='home') { const el=document.getElementById('heroUserEmail'); if(el&&currentUser) el.textContent=currentUser.email; }
+}
+
+function showAuthMsg(text, type) { const el=document.getElementById('authMsg'); el.textContent=text; el.className=`auth-msg show ${type}`; }
+
+function translateError(msg) {
+  const ru = currentLang === 'ru';
+  if (msg.includes('Invalid login')) return ru ? 'Неверный email или пароль' : 'Incorrect email or password';
+  if (msg.includes('already registered')) return ru ? 'Этот email уже зарегистрирован' : 'This email is already registered';
+  if (msg.includes('Password should')) return ru ? 'Пароль минимум 6 символов' : 'Password must be at least 6 characters';
+  return msg;
+}
+
+function openAbout() { alert('About page coming soon.'); }
+
+function shortUA(ua) {
+  if (!ua) return '—';
+  if (ua.includes('iPhone')||ua.includes('iPad')) return '📱 iOS';
+  if (ua.includes('Android')) return '📱 Android';
+  if (ua.includes('Mac')) return '💻 Mac';
+  if (ua.includes('Windows')) return '💻 Windows';
+  if (ua.includes('Linux')) return '🐧 Linux';
+  return '🌐 Browser';
+}
+function timeAgo(ts) {
+  const d=Math.floor((Date.now()-new Date(ts))/1000);
+  if(d<60) return `${d}s ago`; if(d<3600) return `${Math.floor(d/60)}m ago`; return `${Math.floor(d/3600)}h ago`;
+}
+function formatDate(ts) {
+  if(!ts) return '—';
+  return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+</script>
+</body>
+</html>
